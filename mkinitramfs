@@ -1,0 +1,482 @@
+#!/bin/sh
+
+# mkinitrd for 2.4/2.6 Kernel by Jim Gifford <scripts@j555.com>
+# modified by Tobias Powalowski <tpowa@archlinux.org> for Arch Linux usage
+# modified to be mkinitramfs by iphitus <iphitus@gmail.com>
+# modified by S.Çağlar Onur <caglar@uludag.org.tr> for Pardus usage
+# obscured by A.Murat Eren <meren@uludag.org.tr> so no one can easily understand
+# made smarter and removed udev dep by Onur Küçük <onur@pardus.org.tr>
+
+#
+# Usage Menu
+#
+usage () {
+	echo "$0 kernel [options]"
+	echo ""
+	echo "  kernel={version}   specify kernel to build initramfs for"
+	echo "  auto               will build for current running kernel (`uname -r`)"
+    echo ""
+	echo "  Options:"
+	echo "    --full                   build with all possible modules"
+	echo "    --ide                    exclude ide modules"
+	echo "    --scsi                   exclude scsi modules"
+	echo "    --usb                    exclude usb modules"
+	echo "    --cdrom                  exclude cdrom modules"
+	echo "    --fw                     exclude firewire modules"
+	echo "    --remove-module=MODULE   exclude MODULE"
+	echo "    --add-module=MODULE      include MODULE"    
+	echo "                             instead of /lib/modules"
+    echo ""
+    echo "    --fbsplash               add fbsplash theme into initramfs (--fbsplash=pardus)"
+    echo "    --dsdt                   add modified dsdt into initramfs (--dsdt=/boot/DSDT.aml)"
+	echo "    --output=DIR             create initramfs in DIR"
+    echo ""
+	echo "    --quiet                  no status output during initramfs generation"
+	echo "    --show                   show modules that are included in initramfs"
+	echo ""
+	exit 1
+}
+
+outp() {
+	if ! [ "$QUIET" == "1" ]; then
+		echo "$*"
+	fi
+}
+
+cleantemp() {
+    rm -rf $MOUNT_IMAGE 
+    rm -f /tmp/foundmodules
+    rm -f /tmp/kernelversion
+    rm -f /tmp/ide
+    rm -f /tmp/scsi
+    rm -f /tmp/sata
+}
+
+
+# Default Values
+QUIET=0
+FOUNDMODULES=
+
+for arg in $*; do
+	if [ "$arg" == "--quiet" ]; then
+		QUIET=1
+	fi
+done
+
+cleantemp
+
+for option in $*; do
+    case $option in 
+        kernel=*)
+            KERNEL_VERSION="`echo $option | awk -F= '{print $2;}'`"
+        ;;
+        kernel_version=*)
+            KERNEL_VERSION="`echo $option | awk -F= '{print $2;}'`"
+        ;;
+        auto)
+            KERNEL_VERSION=`uname -r`
+    esac     
+done    
+
+KERNEL_NAME="`echo $KERNEL_VERSION | sed -e s@2\.6\.*-@@g`"
+KERNEL_INITRD="initramfs-${KERNEL_VERSION}"
+
+if [ -z "$KERNEL_NAME" ]; then
+    echo "You must specify a kernel to generate an initramfs for"
+    usage
+fi
+
+for option in $*; do
+    case $option in        
+		-ide|--ide)
+			REMOVE_IDE="1"
+			outp "    Removing IDE Modules"
+			;;
+
+		-scsi|--scsi)
+			REMOVE_SCSI="1"
+			outp "    Removing SCSI Modules"
+			;;
+
+		-cdrom|--cdrom)
+			REMOVE_CDROM="1"
+			outp "    Removing CDROM Modules"
+			;;
+
+		-usb|--usb)
+			REMOVE_USB="1"
+			outp "    Removing USB Modules"
+			;;
+
+		-fw|--fw)
+			REMOVE_FW="1"
+			outp "    Removing FW Modules"
+			;;
+
+		-module=*|--remove-module=*)
+ 			NEW_MODULE="`echo $option | awk -F= '{print $2;}'`"
+			outp "    Removing Module $NEW_MODULE"
+			REMOVE_MODULE="$REMOVE_MODULE $NEW_MODULE"
+			;;
+
+		+module=*|--add-module=*)
+			if [ "$ADD_MODULE" == "" ]; then
+				ADD_MODULE="`echo $option | awk -F= '{print $2;}'`"
+				outp "    Adding Module $ADD_MODULE"
+			else
+				NEW_MODULE="`echo $option | awk -F= '{print $2;}'`"
+				outp "    Adding Module $NEW_MODULE"
+				ADD_MODULE="$ADD_MODULE $NEW_MODULE"
+			fi
+			;;
+
+		--full)	
+			# Disable whole subsystems by adding "1"
+			REMOVE_IDE=
+			REMOVE_SCSI=
+			REMOVE_SATA=
+			REMOVE_CDROM=
+			REMOVE_USB=
+			REMOVE_FW=
+			REMOVE_FS=
+			# Define which modules are needed by adding "moduleX moduleY"
+			# empty means all modules are included if they are not disabled above!
+			HOSTCONTROLLER_IDE=
+			HOSTCONTROLLER_SCSI=
+			HOSTCONTROLLER_SATA=
+			HOSTCONTROLLER_USB=
+			FILESYSTEMS=
+			outp "    Building full initramfs with all modules"
+			;;
+        --dsdt=*)
+            DSDT="`echo $option | awk -F= '{print $2;}'`"
+            ;;
+		--fbsplash=*)
+			FBSPLASH_THEME="`echo $option | awk -F= '{print $2;}'`"
+			;;
+		--fbsplash_resolution=*)
+			FBSPLASH_RES="`echo $option | awk -F= '{print $2;}'`"
+			;;
+		-show|--show)
+			LIST_MODULES=1
+			;;
+
+		--quiet)
+			# already set above
+			;;
+	esac
+done
+
+outp "    Making image for kernel $KERNEL_VERSION..."
+
+outp "Setting up Parameters..."
+
+#
+# Find Dependencies
+#
+finddep () {
+	for module in $MODULES; do
+		ADDMOD=`modprobe --set-version=$KERNEL_VERSION --show-depends $module 2>/dev/null | \
+            sed -ne "s#^insmod.*/\(.*\)\.ko.*#\1#p"`
+        FOUNDMODULES="$FOUNDMODULES $ADDMOD"
+	done
+}
+
+# Clean out temp files
+cleantemp
+
+#
+# Add or Remove IDE Modules
+#
+if [ "$REMOVE_IDE" == "1" ]; then
+	PRE_IDE=""
+	IDE_MODULES=""
+	POST_IDE=""
+else
+	if [ -d /lib/modules/$KERNEL_VERSION/kernel/drivers/ide/pci ]; then
+		if [ "$HOSTCONTROLLER_IDE" == "" ]; then
+			CHECK="`ls -1 /lib/modules/$KERNEL_VERSION/kernel/drivers/ide/pci/* > /tmp/ide; \
+    			sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/ide; cat /tmp/ide`"
+			for check in $CHECK; do	
+				IDE_MODULE="`echo $check`"
+				IDE_MODULES="$IDE_MODULES $IDE_MODULE"
+			done
+		else
+			IDE_MODULES="$HOSTCONTROLLER_IDE"
+		fi
+
+		if [ "$REMOVE_CDROM" == "1" ]; then
+			if ! [ "$IDE_MODULES" == "" ]; then
+				POST_IDE="ide-disk ide-floppy"
+			else
+				POST_IDE=""
+			fi
+			
+		else
+			if ! [ "$IDE_MODULES" == "" ]; then
+				POST_IDE="ide-disk cdrom ide-cd ide-floppy"
+			else
+				POST_IDE=""
+			fi
+			
+		fi
+	fi
+fi
+
+#
+# Add or Remove SCSI Modules
+#
+if [ "$REMOVE_SCSI" == "1" ]; then
+	PRE_SCSI=""
+	SCSI_MODULES=""
+	POST_SCSI=""
+else
+	if [ -d /lib/modules/$KERNEL_VERSION/kernel/drivers/scsi ]; then
+		if [ "$HOSTCONTROLLER_SCSI" == "" ]; then
+			CHECK="`find /lib/modules/$KERNEL_VERSION/kernel/drivers/scsi/ -name "*.ko" ! -name "sata*" ! -name "ide-scsi*" ! -name "libata*" ! -name "*_cs*" >/tmp/scsi; \
+			    find /lib/modules/$KERNEL_VERSION/kernel/drivers/message/fusion/ -name "*.ko" >>/tmp/scsi ; \
+                find /lib/modules/$KERNEL_VERSION/kernel/drivers/block/ -name "*.ko" ! -name "*s8x.ko" ! -name "*nbd.ko" ! -name "*pktcdvd.ko" >> /tmp/scsi ; \
+    			sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/scsi; cat /tmp/scsi`"
+			for check in $CHECK; do	
+			    SCSI_MODULE="`echo $check`"
+    			SCSI_MODULES="$SCSI_MODULES $SCSI_MODULE"
+			done
+			PRE_SCSI="sd_mod"
+		else
+			PRE_SCSI="sd_mod"
+			SCSI_MODULES="$HOSTCONTROLLER_SCSI"
+		fi
+
+		if [ "$REMOVE_CDROM" == "1" ]; then
+			POST_SCSI=""
+		else
+			if ! [ "$SCSI_MODULES" == "" ]; then
+				POST_SCSI="cdrom sr_mod"
+			else
+				POST_SCSI=""
+			fi
+		fi
+	fi
+fi
+
+#
+# Add or Remove SATA Modules
+#
+if [ "$REMOVE_SATA" == "1" ]; then
+	PRE_SATA=""
+	SATA_MODULES=""
+	POST_SATA=""
+else
+	if [ -d /lib/modules/$KERNEL_VERSION/kernel/drivers/scsi ]; then
+		if [ "$HOSTCONTROLLER_SATA" == "" ]; then
+			CHECK="`find /lib/modules/$KERNEL_VERSION/kernel/drivers/scsi/ -name "sata*" ! -name "ide-scsi*" ! -name "*_cs*" >/tmp/sata; \
+                find /lib/modules/$KERNEL_VERSION/kernel/drivers/block/ -name "*s8x.ko"; \
+		    	sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/sata; cat /tmp/sata`"
+			for check in $CHECK; do	
+				SATA_MODULE="`echo $check`"
+				SATA_MODULES="$SATA_MODULES $SATA_MODULE"
+			done
+				PRE_SATA="sd_mod libata"
+		else
+			PRE_SATA="sd_mod libata"
+			SATA_MODULES="$HOSTCONTROLLER_SATA"
+		fi
+	fi
+fi
+
+#
+# Add or Remove USB Modules
+#
+if [ "$REMOVE_USB" == "1" ]; then
+	PRE_USB=""
+	USB_MODULES=""
+	POST_USB=""
+else
+	PRE_USB="sd_mod usbcore"
+		
+	if  [ "$HOSTCONTROLLER_USB" == "" ]; then
+		USB_MODULES="ehci-hcd ohci-hcd uhci-hcd"
+	else
+		USB_MODULES="$HOSTCONTROLLER_USB"
+	fi
+	POST_USB="usb-storage usbhid"
+fi
+
+# Add or Remove FW Modules
+#
+if [ "$REMOVE_FW" == "1" ]; then
+	PRE_FW=""
+	FW_MODULES=""
+	POST_FW=""
+else
+	PRE_FW="sd_mod ieee1394"
+	FW_MODULES="ohci1394"
+	POST_FW="sbp2"
+fi
+
+#
+# Add or Remove FS Modules
+#
+if [ "$REMOVE_FS" == "1" ]; then
+	PRE_FS=""
+	FS_MODULES=""
+	POST_FS=""
+else
+	PRE_FS=""
+	if  [ "$FILESYSTEMS" == "" ]; then
+		FS_MODULES="ext2 reiser4 ext3 jfs reiserfs xfs"
+	else
+		FS_MODULES="$FILESYSTEMS"
+	fi	
+	POST_FS=""
+fi
+
+#
+# Create Module Groups
+#
+IDE_MODULES_GROUP="$PRE_IDE $IDE_MODULES $POST_IDE"
+SCSI_MODULES_GROUP="$PRE_SCSI $SCSI_MODULES $POST_SCSI"
+SATA_MODULES_GROUP="$PRE_SATA $SATA_MODULES $POST_SATA"
+USB_MODULES_GROUP="$PRE_USB $USB_MODULES $POST_USB"
+FW_MODULES_GROUP="$PRE_FW $FW_MODULES $POST_FW"
+FS_MODULES_GROUP="$PRE_FS $FS_MODULES $POST_FS"
+
+#
+# List of All Needed Modules
+#
+MODULES="$IDE_MODULES_GROUP $SCSI_MODULES_GROUP $SATA_MODULES_GROUP $USB_MODULES_GROUP $FW_MODULES_GROUP $FS_MODULES_GROUP $ADD_MODULE"
+
+#
+# Find the module dependencies
+#
+finddep
+
+#
+# Initramfs paths
+MOUNT_IMAGE="/tmp/initrd.$$"
+INITRD="/boot/$KERNEL_INITRD"
+
+#
+# Check for Valid Kernel
+#
+if [ -e /lib/modules/$KERNEL_VERSION ]; then
+	outp "    /lib/modules/$KERNEL_VERSION found"
+else
+	echo "ERROR: /lib/modules/$KERNEL_VERSION does not exist!" >&2
+	exit 1
+fi
+
+#
+# Create Image
+#
+
+outp "Creating Initial RAM Filesystem in ${INITRD%/*}..."
+
+#
+# Create Directories
+#
+mkdir -p $MOUNT_IMAGE
+mkdir -p $MOUNT_IMAGE/{bin,sbin,etc,dev,lib,newroot,proc,sys}
+mkdir -p $MOUNT_IMAGE/lib/modules/$KERNEL_VERSION
+
+# Basic tty support
+mknod $MOUNT_IMAGE/dev/null c 1 3
+mknod $MOUNT_IMAGE/dev/console c 5 1
+mknod $MOUNT_IMAGE/dev/tty c 5 0
+mknod $MOUNT_IMAGE/dev/tty1 c 4 0
+mknod $MOUNT_IMAGE/dev/ram0 b 1 0
+mknod $MOUNT_IMAGE/dev/loop0 b 7 0
+
+# Install busybox and init script
+cp -a /sbin/busybox $MOUNT_IMAGE/bin/busybox
+cp -a /lib/initramfs/busybox.links $MOUNT_IMAGE/bin/busybox.links
+cd $MOUNT_IMAGE/bin/
+# or static lists...
+for f in `sed 's/.*\///' $MOUNT_IMAGE/bin/busybox.links`; do
+    ln busybox $MOUNT_IMAGE/bin/$f
+done
+
+# create needed modprobe link
+ln $MOUNT_IMAGE/bin/busybox $MOUNT_IMAGE/sbin/modprobe
+
+# install coolplug
+cp -a /sbin/coolplug $MOUNT_IMAGE/bin/coolplug
+
+# install init script
+cp /lib/initramfs/init $MOUNT_IMAGE/init
+chmod +x $MOUNT_IMAGE/init
+
+# add filesystem check to avoid VFS warnings during boot
+echo "none none none defaults 0 0" >> $MOUNT_IMAGE/etc/fstab
+touch $MOUNT_IMAGE/bin/fsck.ext2
+touch $MOUNT_IMAGE/bin/fsck.ext3
+touch $MOUNT_IMAGE/bin/fsck.jfs
+touch $MOUNT_IMAGE/bin/fsck.reiserfs
+touch $MOUNT_IMAGE/bin/fsck.xfs
+touch $MOUNT_IMAGE/bin/fsck.reiser4
+
+
+#
+# Copy Modules
+#
+
+# Remove duplicates from the line
+MODULES=`echo "$FOUNDMODULES"|sed 's@-@_@g'`
+
+# Loop through all the modules
+for module in $MODULES; do
+    REMOVE_MOD="0"
+      
+    # Check blacklist
+    for dead in $REMOVE_MODULE; do
+        dead=`echo $dead|sed 's@-@_@g'`
+        if [ "$dead" = "$module" ]; then
+            REMOVE_MOD="1"
+        fi
+    done
+    
+    # Ensure both - and _ named modules are accounted again
+    modulepath="`find /lib/modules/$KERNEL_VERSION/kernel -name ${module}.ko`"
+    if [ -z "$modulepath" ]; then
+        module=`echo $module|sed 's@_@-@g'`
+        modulepath="`find /lib/modules/$KERNEL_VERSION/kernel -name ${module}.ko`"
+    fi    
+
+    if [ "$modulepath" -a "$REMOVE_MOD" != "1" ]; then
+        cp $modulepath $MOUNT_IMAGE/lib/modules/$KERNEL_VERSION/
+        COPIED_MODULES="$COPIED_MODULES $module"
+    fi
+done
+
+[ "$LIST_MODULES" = "1" ] && echo "Included modules: `echo $COPIED_MODULES|sed 's@ @\n@g'|sort|uniq`"
+echo "$COPIED_MODULES" >> $MOUNT_IMAGE/modules
+
+# We need modmaps for coolplug autoprobe
+depmod -ae -b $MOUNT_IMAGE -F /boot/System.map-$KERNEL_VERSION $KERNEL_VERSION
+
+# Add fbsplash
+if [ ! -z $FBSPLASH_THEME ]; then
+    if [ ! -z $FBSPLASH_RES ]; then
+        splash_geninitramfs -v -c $MOUNT_IMAGE -r $FBSPLASH_RES $FBSPLASH_THEME
+    else
+        splash_geninitramfs -v -c $MOUNT_IMAGE -r 1024x768 $FBSPLASH_THEME
+    fi
+    # Splash_geninitramfs has poor error checking.
+fi
+
+# Custom DSDT Support 
+if [ ! -z $DSDT ]; then
+    if [ -f $DSDT ]; then
+        cp $DSDT $MOUNT_IMAGE/DSDT.aml
+    else
+        echo "ERROR: $DSDT not found..."  >&2
+    fi
+fi
+
+# Create initramfs
+(cd ${MOUNT_IMAGE} && find . | cpio --quiet -o -H newc | gzip -9 >${INITRD})
+
+# Remove all temp files
+cleantemp
+
+exit 0

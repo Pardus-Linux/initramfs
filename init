@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# mount proc and sys
+mount -n -t proc proc /proc
+mount -n -t sysfs sys /sys
+
+# probe hardware and insert needed modules
+/bin/coolplug 1> /dev/null 2>&1
+
+# Prepare for switch root
+echo 0x0100 > /proc/sys/kernel/real-root-dev
+ROOT_DEVICE=`cat /proc/cmdline | awk -Froot= '{print $2}' | awk '{print $1}'`
+
+#check for any change to default runlevel
+for x in `cat /proc/cmdline`; do
+    case "${x}" in
+        [0123456Ss])
+            LEVEL=${x}
+        ;;
+    esac
+done
+
+INIT=`cat /proc/cmdline | awk -Finit= '{print $2}' | awk '{print $1}'`
+[ "${INIT}" == "" ] && INIT="/sbin/init";
+
+# mount real root
+mount -t auto -n -o ro $ROOT_DEVICE /newroot
+
+# umount pseudo fs
+umount /sys
+umount /proc
+
+# switch_root and pass init arguments
+exec /bin/switch_root -c /dev/console /newroot ${INIT} ${LEVEL}
