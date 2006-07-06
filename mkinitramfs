@@ -29,6 +29,7 @@ usage () {
     echo ""
     echo "    --fbsplash               add fbsplash theme into initramfs (--fbsplash=pardus)"
     echo "    --dsdt                   add modified dsdt into initramfs (--dsdt=/boot/DSDT.aml)"
+	echo "    --root-dir=DIR           look for modules in ROOT_DIR/lib/modules"
 	echo "    --output=DIR             create initramfs in DIR"
     echo ""
 	echo "    --quiet                  no status output during initramfs generation"
@@ -46,6 +47,7 @@ outp() {
 cleantemp() {
     rm -rf $MOUNT_IMAGE 
     rm -f /tmp/foundmodules
+    rm -f /tmp/config
     rm -f /tmp/kernelversion
     rm -f /tmp/ide
     rm -f /tmp/scsi
@@ -54,6 +56,7 @@ cleantemp() {
 
 
 # Default Values
+ROOT_DIR=
 QUIET=0
 FOUNDMODULES=
 
@@ -157,6 +160,16 @@ for option in $*; do
 		--fbsplash_resolution=*)
 			FBSPLASH_RES="`echo $option | awk -F= '{print $2;}'`"
 			;;
+        --root-dir=*)
+            ROOT_DIR="`echo $option | awk -F= '{print $2;}'`"
+            ;;
+        --output=*)
+            OUTPUT="`echo $option | awk -F= '{print $2;}'`"
+            if [ ! -d $OUTPUT ]; then
+                outp "$OUTPUT dir not found!"
+                exit 1
+            fi
+            ;;
 		-show|--show)
 			LIST_MODULES=1
 			;;
@@ -193,9 +206,9 @@ if [ "$REMOVE_IDE" == "1" ]; then
 	IDE_MODULES=""
 	POST_IDE=""
 else
-	if [ -d /lib/modules/$KERNEL_VERSION/kernel/drivers/ide/pci ]; then
+	if [ -d $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/ide/pci ]; then
 		if [ "$HOSTCONTROLLER_IDE" == "" ]; then
-			CHECK="`ls -1 /lib/modules/$KERNEL_VERSION/kernel/drivers/ide/pci/* > /tmp/ide; \
+			CHECK="`ls -1 $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/ide/pci/* > /tmp/ide; \
     			sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/ide; cat /tmp/ide`"
 			for check in $CHECK; do	
 				IDE_MODULE="`echo $check`"
@@ -231,11 +244,11 @@ if [ "$REMOVE_SCSI" == "1" ]; then
 	SCSI_MODULES=""
 	POST_SCSI=""
 else
-	if [ -d /lib/modules/$KERNEL_VERSION/kernel/drivers/scsi ]; then
+	if [ -d $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi ]; then
 		if [ "$HOSTCONTROLLER_SCSI" == "" ]; then
-			CHECK="`find /lib/modules/$KERNEL_VERSION/kernel/drivers/scsi/ -name "*.ko" ! -name "sata*" ! -name "ide-scsi*" ! -name "libata*" ! -name "*_cs*" >/tmp/scsi; \
-			    find /lib/modules/$KERNEL_VERSION/kernel/drivers/message/fusion/ -name "*.ko" >>/tmp/scsi ; \
-                find /lib/modules/$KERNEL_VERSION/kernel/drivers/block/ -name "*.ko" ! -name "*s8x.ko" ! -name "*nbd.ko" ! -name "*pktcdvd.ko" >> /tmp/scsi ; \
+			CHECK="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi/ -name "*.ko" ! -name "sata*" ! -name "ide-scsi*" ! -name "libata*" ! -name "*_cs*" >/tmp/scsi; \
+			    find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/message/fusion/ -name "*.ko" >>/tmp/scsi ; \
+                find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/block/ -name "*.ko" ! -name "*s8x.ko" ! -name "*nbd.ko" ! -name "*pktcdvd.ko" >> /tmp/scsi ; \
     			sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/scsi; cat /tmp/scsi`"
 			for check in $CHECK; do	
 			    SCSI_MODULE="`echo $check`"
@@ -267,10 +280,10 @@ if [ "$REMOVE_SATA" == "1" ]; then
 	SATA_MODULES=""
 	POST_SATA=""
 else
-	if [ -d /lib/modules/$KERNEL_VERSION/kernel/drivers/scsi ]; then
+	if [ -d $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi ]; then
 		if [ "$HOSTCONTROLLER_SATA" == "" ]; then
-			CHECK="`find /lib/modules/$KERNEL_VERSION/kernel/drivers/scsi/ -name "sata*" ! -name "ide-scsi*" ! -name "*_cs*" >/tmp/sata; \
-                find /lib/modules/$KERNEL_VERSION/kernel/drivers/block/ -name "*s8x.ko"; \
+			CHECK="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi/ -name "sata*" ! -name "ide-scsi*" ! -name "*_cs*" >/tmp/sata; \
+                find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/block/ -name "*s8x.ko"; \
 		    	sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/sata; cat /tmp/sata`"
 			for check in $CHECK; do	
 				SATA_MODULE="`echo $check`"
@@ -354,7 +367,11 @@ finddep
 #
 # Initramfs paths
 MOUNT_IMAGE="/tmp/initrd.$$"
-INITRD="/boot/$KERNEL_INITRD"
+if [ -z $OUTPUT ]; then
+    INITRD="/boot/$KERNEL_INITRD"
+else
+    INITRD="$OUTPUT/$KERNEL_INITRD"
+fi
 
 #
 # Check for Valid Kernel
@@ -436,10 +453,10 @@ for module in $MODULES; do
     done
     
     # Ensure both - and _ named modules are accounted again
-    modulepath="`find /lib/modules/$KERNEL_VERSION/kernel -name ${module}.ko`"
+    modulepath="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel -name ${module}.ko`"
     if [ -z "$modulepath" ]; then
         module=`echo $module|sed 's@_@-@g'`
-        modulepath="`find /lib/modules/$KERNEL_VERSION/kernel -name ${module}.ko`"
+        modulepath="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel -name ${module}.ko`"
     fi    
 
     if [ "$modulepath" -a "$REMOVE_MOD" != "1" ]; then
@@ -452,7 +469,7 @@ done
 echo "$COPIED_MODULES" >> $MOUNT_IMAGE/modules
 
 # We need modmaps for coolplug autoprobe
-depmod -ae -b $MOUNT_IMAGE -F /boot/System.map-$KERNEL_VERSION $KERNEL_VERSION
+depmod -ae -b $MOUNT_IMAGE -F $ROOT_DIR/boot/System.map-$KERNEL_VERSION $KERNEL_VERSION
 
 # Add fbsplash
 if [ ! -z $FBSPLASH_THEME ]; then
@@ -474,7 +491,9 @@ if [ ! -z $DSDT ]; then
 fi
 
 # Create initramfs
-(cd ${MOUNT_IMAGE} && find . | cpio --quiet -o -H newc | gzip -9 >${INITRD})
+#FIXME: Disable gzip until kernel issue solved
+#(cd ${MOUNT_IMAGE} && find . | cpio --quiet -o -H newc | gzip -9 >${INITRD})
+(cd ${MOUNT_IMAGE} && find . | cpio --quiet -o -H newc >${INITRD})
 
 # Remove all temp files
 cleantemp
