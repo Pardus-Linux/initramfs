@@ -189,9 +189,8 @@ outp "Setting up Parameters..."
 #
 finddep () {
 	for module in $MODULES; do
-		ADDMOD=`modprobe --set-version=$KERNEL_VERSION --show-depends $module 2>/dev/null | \
-            sed -ne "s#^insmod.*/\(.*\)\.ko.*#\1#p"`
-        FOUNDMODULES="$FOUNDMODULES $ADDMOD"
+        ADDMOD=`grep "/$module.ko:" $ROOT_DIR/lib/modules/$KERNEL_VERSION/modules.dep | awk -F": " '{print $2}' | sed -e "s/ /\n/g" | sed -ne "s#.*/\(.*\)\.ko.*#\1#p"`
+        FOUNDMODULES="$FOUNDMODULES $ADDMOD $module" 
 	done
 }
 
@@ -376,10 +375,10 @@ fi
 #
 # Check for Valid Kernel
 #
-if [ -e /lib/modules/$KERNEL_VERSION ]; then
-	outp "    /lib/modules/$KERNEL_VERSION found"
+if [ -e $ROOT_DIR/lib/modules/$KERNEL_VERSION ]; then
+	outp "    $ROOT_DIR/lib/modules/$KERNEL_VERSION found"
 else
-	echo "ERROR: /lib/modules/$KERNEL_VERSION does not exist!" >&2
+	echo "ERROR: $ROOT_DIR/lib/modules/$KERNEL_VERSION does not exist!" >&2
 	exit 1
 fi
 
@@ -469,7 +468,7 @@ done
 echo "$COPIED_MODULES" >> $MOUNT_IMAGE/modules
 
 # We need modmaps for coolplug autoprobe
-depmod -ae -b $MOUNT_IMAGE -F $ROOT_DIR/boot/System.map-$KERNEL_VERSION $KERNEL_VERSION
+/sbin/depmod -ae -b $MOUNT_IMAGE -F $ROOT_DIR/boot/System.map-$KERNEL_VERSION $KERNEL_VERSION
 
 # Add fbsplash
 if [ ! -z $FBSPLASH_THEME ]; then
@@ -493,7 +492,7 @@ fi
 # Create initramfs
 #FIXME: Disable gzip until kernel issue solved
 #(cd ${MOUNT_IMAGE} && find . | cpio --quiet -o -H newc | gzip -9 >${INITRD})
-(cd ${MOUNT_IMAGE} && find . | cpio --quiet -o -H newc >${INITRD})
+(cd ${MOUNT_IMAGE} && find . | cpio --quiet --dereference -o -H newc >${INITRD})
 
 # Remove all temp files
 cleantemp
