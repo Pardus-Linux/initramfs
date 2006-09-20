@@ -63,12 +63,11 @@ manage_tmpfs() {
     echo "Managing tempfs"
     mount -t tmpfs tmpfs /newroot
 
-    for d in "dev mnt mnt/cdrom mnt/livecd tmp sys"
+    for d in "dev mnt mnt/cdrom mnt/livecd tmp sys proc"
     do
         mkdir /newroot/${d}
     done
 
-    probe_devices
     mv /dev/* /newroot/dev/
 
     findcdmount /newroot/dev/hd?
@@ -107,21 +106,16 @@ mount -n -t proc proc /proc
 mount -n -t sysfs sys /sys
 
 parse_cmdline
-[ "${INIT}" == "" ] && INIT="/sbin/init";
-
-# -------------------------- main cd ---------------------------------------
-mkdir /newroot
-
 [ -n "$QUIET" ] && echo '0' > /proc/sys/kernel/printk
 
+probe_devices
+
+
+echo "Switching root to ${ROOT_DEVICE}"
+
+# -------------------------- main cd ---------------------------------------
 manage_tmpfs
 mount_cdroot
-
-
-echo "About to pivotroot"
-cd /newroot
-mkdir /newroot/proc /newroot/sys 2>/dev/null
-pivot_root . tmp/.initrd
 
 # --------------------------- main hdd ----------------------------------------
 # Prepare for switch root
@@ -133,6 +127,8 @@ mount -t auto -n -o ro $ROOT_DEVICE /newroot
 # umount pseudo fs
 umount -n /sys
 umount -n /proc
+
+[ "${INIT}" == "" ] && INIT="/sbin/init";
 
 # just to make sure, may not be necessary
 # [ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
