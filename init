@@ -1,4 +1,8 @@
 #!/bin/sh
+#
+# Simple init script that should handle both 
+# livecd/tmpfs boot and hdd boot
+#
 
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
 ROOT_LINKS='bin sbin lib boot usr opt'
@@ -8,6 +12,7 @@ CDROOT=0
 QUIET=0
 ROOT_DEVICE=''
 IMG_DEVICES="hd?"
+
 
 probe_devices() {
     echo "Probing devices"
@@ -64,14 +69,12 @@ manage_tmpfs() {
     echo "Managing tempfs"
     mount -t tmpfs tmpfs /newroot
 
-    for ndir in dev mnt mnt/cdrom mnt/livecd tmp sys proc
+    for d in dev mnt mnt/cdrom mnt/livecd tmp sys proc
     do
-        mkdir -p "/newroot/${ndir}"
+        mkdir -p "/newroot/${d}"
     done
 
     mv /dev/* /newroot/dev/
-
-    findcdmount "/newroot/dev/${IMG_DEVICES}"
 }
 
 mount_cdroot() {
@@ -83,7 +86,7 @@ mount_cdroot() {
 
     if [ "$?" != '0' ]
     then
-        echo "Could not find filesystem, running shell"
+        echo "Could not mount root image, running shell"
         /bin/sh
     fi
     FS_LOCATION='mnt/livecd'
@@ -104,16 +107,25 @@ mount -n -t proc proc /proc > /dev/null 2>&1
 mount -n -t sysfs sys /sys > /dev/null 2>&1
 
 parse_cmdline
-[ -n "$QUIET" ] && echo '0' > /proc/sys/kernel/printk
+# Shall be decided later
+# [ -n "$QUIET" ] && echo '0' > /proc/sys/kernel/printk
 
 probe_devices
 
-# Prepare for switch root
 echo 0x0100 > /proc/sys/kernel/real-root-dev
 
 if [ "${CDROOT}" -eq '1' ]
 then
+    ROOT_DEVICE=''
     manage_tmpfs
+    findcdmount "/newroot/dev/${IMG_DEVICES}"
+
+    if [ "${ROOT_DEVICE}" == "" ]
+    then
+        echo "Could not find mount media, running shell"
+        /bin/sh
+    fi
+
     mount_cdroot
 else
     # mount real root
@@ -122,7 +134,6 @@ fi
 
 echo "Switching root to ${ROOT_DEVICE}"
 
-# umount pseudo fs
 umount -n /sys
 umount -n /proc
 
@@ -130,7 +141,5 @@ umount -n /proc
 
 # just to make sure, may not be necessary
 [ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
-
-# switch_root and pass init arguments
 exec /bin/switch_root -c /dev/console /newroot ${INIT} ${LEVEL}
 
