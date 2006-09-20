@@ -8,9 +8,29 @@ CDROOT=0
 QUIET=1
 ROOT_DEVICE=''
 
+
 probe_devices() {
     echo "Probing devices"
     /bin/coolplug 1> /dev/null 2>&1
+}
+
+parse_cmdline() {
+    for x in `cat /proc/cmdline`; do
+        case "${x}" in
+            [0123456Ss])
+                LEVEL=${x}
+            ;;
+            mudur=*livecd*)
+                CDROOT=1
+            ;;
+            root=*)
+                ROOT_DEVICE=`echo ${x}|cut -f2 -d=`
+            ;;
+            init=*)
+                INIT=`echo ${x}|cut -f2 -d=`
+            ;;
+        esac
+    done
 }
 
 findcdmount() {
@@ -84,23 +104,8 @@ mount -n -t sysfs sys /sys
 # Prepare for switch root
 echo 0x0100 > /proc/sys/kernel/real-root-dev
 
-#check for any change to default runlevel
-for x in `cat /proc/cmdline`; do
-    case "${x}" in
-        [0123456Ss])
-            LEVEL=${x}
-        ;;
-        mudur=*livecd*)
-            CDROOT=1
-        ;;
-        root=*)
-            ROOT_DEVICE=`echo ${x}|cut -f2 -d=`
-        ;;
-        init=*)
-            INIT=`echo ${x}|cut -f2 -d=`
-        ;;
-    esac
-done
+parse_cmdline
+
 
 [ "${INIT}" == "" ] && INIT="/sbin/init";
 
