@@ -7,7 +7,7 @@ LOOP="pardus.img"
 CDROOT=0
 QUIET=0
 ROOT_DEVICE=''
-
+BOOT_DEVICES="hd?"
 
 probe_devices() {
     echo "Probing devices"
@@ -70,7 +70,7 @@ manage_tmpfs() {
 
     mv /dev/* /newroot/dev/
 
-    findcdmount /newroot/dev/hd?
+    findcdmount "/newroot/dev/${BOOT_DEVICES}"
 }
 
 mount_cdroot() {
@@ -110,19 +110,19 @@ parse_cmdline
 
 probe_devices
 
-
-echo "Switching root to ${ROOT_DEVICE}"
-
-# -------------------------- main cd ---------------------------------------
-manage_tmpfs
-mount_cdroot
-
-# --------------------------- main hdd ----------------------------------------
 # Prepare for switch root
 echo 0x0100 > /proc/sys/kernel/real-root-dev
 
-# mount real root
-mount -t auto -n -o ro $ROOT_DEVICE /newroot
+if [ "${CDROOT}" -eq '1' ]
+then
+    manage_tmpfs
+    mount_cdroot
+else
+    # mount real root
+    mount -t auto -n -o ro $ROOT_DEVICE /newroot
+fi
+
+echo "Switching root to ${ROOT_DEVICE}"
 
 # umount pseudo fs
 umount -n /sys
