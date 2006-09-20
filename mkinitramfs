@@ -401,7 +401,13 @@ mknod $MOUNT_IMAGE/dev/console c 5 1
 mknod $MOUNT_IMAGE/dev/tty c 5 0
 mknod $MOUNT_IMAGE/dev/tty1 c 4 0
 mknod $MOUNT_IMAGE/dev/ram0 b 1 0
-mknod $MOUNT_IMAGE/dev/loop0 b 7 0
+
+# loopback devices, we need lots
+mkdir $MOUNT_IMAGE/dev/loop
+for i in `seq 0 7`; do
+    mknod "$MOUNT_IMAGE/dev/loop/$i" b 7 "$i"
+    ln -s "loop/$i" "$MOUNT_IMAGE/dev/loop$i"
+done
 
 # Install busybox and init script
 cp -a /sbin/busybox $MOUNT_IMAGE/bin/busybox
