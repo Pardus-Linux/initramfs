@@ -62,7 +62,11 @@ findcdmount() {
 manage_tmpfs() {
     echo "Managing tempfs"
     mount -t tmpfs tmpfs /newroot
-    mkdir /newroot/dev /newroot/mnt /newroot/mnt/cdrom /newroot/mnt/livecd /newroot/tmp /newroot/tmp/.initrd /newroot/sys
+
+    for d in "dev mnt mnt/cdrom mnt/livecd tmp sys"
+    do
+        mkdir /newroot/${d}
+    done
 
     probe_devices
     mv /dev/* /newroot/dev/
@@ -119,24 +123,6 @@ cd /newroot
 mkdir /newroot/proc /newroot/sys 2>/dev/null
 pivot_root . tmp/.initrd
 
-umount -n /tmp/.initrd/proc > /dev/null 2>&1
-umount -n /tmp/.initrd/sys > /dev/null 2>&1
-
-# exec chroot . /sbin/init </dev/console >/dev/console 2>&1
-echo "Final chroot"
-exec <dev/console >dev/console 2>&1
-# echo '.'
-exec chroot . /bin/sh <<- EOF
-     umount -n /tmp/.initrd > /dev/null 2>&1
-    /sbin/blockdev --flushbufs /dev/ram0 >/dev/null 2>&1
-     exec /sbin/init ${LEVEL}
-EOF
-
-echo 'A fatal error has occured. Running  shell...'
-echo
-exec /bin/sh
-
-
 # --------------------------- main hdd ----------------------------------------
 # Prepare for switch root
 echo 0x0100 > /proc/sys/kernel/real-root-dev
@@ -145,8 +131,8 @@ echo 0x0100 > /proc/sys/kernel/real-root-dev
 mount -t auto -n -o ro $ROOT_DEVICE /newroot
 
 # umount pseudo fs
-umount /sys
-umount /proc
+umount -n /sys
+umount -n /proc
 
 # just to make sure, may not be necessary
 # [ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
