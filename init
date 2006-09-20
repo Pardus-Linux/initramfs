@@ -100,7 +100,6 @@ mount_cdroot() {
 }
 
 # ----- main -------
-# mount -o remount,rw /
 mount -n -t proc proc /proc > /dev/null 2>&1
 mount -n -t sysfs sys /sys > /dev/null 2>&1
 
