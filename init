@@ -14,6 +14,11 @@ ROOT_DEVICE=''
 IMG_DEVICES="hd?"
 
 
+fall2sh() {
+    echo "$*"
+    /bin/sh
+}
+
 probe_devices() {
     echo "Probing devices"
     /bin/coolplug 1> /dev/null 2>&1
@@ -86,8 +91,7 @@ mount_cdroot() {
 
     if [ "$?" != '0' ]
     then
-        echo "Could not mount root image"
-        /bin/sh
+        fall2sh "Could not mount root image"
     fi
     FS_LOCATION='mnt/livecd'
     umount /dev
@@ -107,6 +111,7 @@ mount -n -t proc proc /proc > /dev/null 2>&1
 mount -n -t sysfs sys /sys > /dev/null 2>&1
 
 parse_cmdline
+
 # Shall be decided later
 # [ -n "$QUIET" ] && echo '0' > /proc/sys/kernel/printk
 
@@ -122,8 +127,7 @@ then
 
     if [ "${ROOT_DEVICE}" == "" ]
     then
-        echo "Could not find mount media"
-        /bin/sh
+        fall2sh "Could not find mount media"
     fi
 
     mount_cdroot
@@ -131,8 +135,7 @@ else
     # mount real root
     if [ ! -b "${ROOT_DEVICE}" ]
     then
-        echo "Could not find boot device"
-        /bin/sh
+        fall2sh "Could not find boot device"
     else
         mount -t auto -n -o ro $ROOT_DEVICE /newroot
     fi
