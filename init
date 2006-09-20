@@ -86,7 +86,7 @@ mount_cdroot() {
 
     if [ "$?" != '0' ]
     then
-        echo "Could not mount root image, running shell"
+        echo "Could not mount root image"
         /bin/sh
     fi
     FS_LOCATION='mnt/livecd'
@@ -122,14 +122,20 @@ then
 
     if [ "${ROOT_DEVICE}" == "" ]
     then
-        echo "Could not find mount media, running shell"
+        echo "Could not find mount media"
         /bin/sh
     fi
 
     mount_cdroot
 else
     # mount real root
-    mount -t auto -n -o ro $ROOT_DEVICE /newroot
+    if [ ! -b "${ROOT_DEVICE}" ]
+    then
+        echo "Could not find boot device"
+        /bin/sh
+    else
+        mount -t auto -n -o ro $ROOT_DEVICE /newroot
+    fi
 fi
 
 echo "Switching root to ${ROOT_DEVICE}"
