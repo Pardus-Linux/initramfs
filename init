@@ -17,6 +17,9 @@ for x in `cat /proc/cmdline`; do
         [0123456Ss])
             LEVEL=${x}
         ;;
+        mudur=*livecd*)
+            CDROOT=1
+        ;;
     esac
 done
 
