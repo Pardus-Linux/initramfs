@@ -1,11 +1,85 @@
 #!/bin/sh
 
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+ROOT_LINKS='bin sbin lib boot usr opt'
+ROOT_TREES='etc root home var'
+LOOP="pardus.img"
+CDROOT=0
+QUIET=1
+ROOT_DEVICE=''
+
+probe_devices() {
+    echo "Probing devices"
+    /bin/coolplug 1> /dev/null 2>&1
+}
+
+findcdmount() {
+    echo "find cdmount"
+    if [ "$#" -gt "0" ]
+    then
+        for x in $*
+        do
+            mount -r ${x} /newroot/mnt/cdrom > /dev/null 2>&1
+
+            if [ "$?" = '0' ]
+            then
+                # Check for cdroot image
+                if [ -e /newroot/mnt/cdrom/${LOOP} ]
+                then
+                    ROOT_DEVICE="${x}"
+                    break
+                else
+                    umount /newroot/mnt/cdrom
+                fi
+            fi
+        done
+    fi
+}
+
+manage_tmpfs() {
+    echo "Managing tempfs"
+    mount -t tmpfs tmpfs /newroot
+    mkdir /newroot/dev /newroot/mnt /newroot/mnt/cdrom /newroot/mnt/livecd /newroot/tmp /newroot/tmp/.initrd /newroot/sys
+
+    mount -t sysfs sys /sys 2> /dev/null
+
+    probe_devices
+    mv /dev/* /newroot/dev/
+
+    findcdmount /newroot/dev/hd?
+}
+
+mount_cdroot() {
+    cd /newroot
+    echo "Mounting squashfs"
+    # Loop type squashfs
+    mount -o bind /newroot/dev /dev
+    mount -t squashfs -o loop,ro /newroot/mnt/cdrom/${LOOP} /newroot/mnt/livecd
+
+    if [ "$?" != '0' ]
+    then
+        echo "Could not find filesystem, running shell"
+        /bin/sh
+    fi
+    FS_LOCATION='mnt/livecd'
+    umount /dev
+
+    for x in ${ROOT_LINKS}
+    do
+        ln -s "${FS_LOCATION}/${x}" "${x}"
+    done
+
+    echo "Managing links and files"
+    mkdir initrd proc tmp sys
+    chmod 1777 tmp
+    (cd /newroot/${FS_LOCATION}; cp -a ${ROOT_TREES} /newroot)
+}
+
+
+
 # mount proc and sys
 mount -n -t proc proc /proc
 mount -n -t sysfs sys /sys
-
-# probe hardware and insert needed modules
-/bin/coolplug 1> /dev/null 2>&1
 
 # Prepare for switch root
 echo 0x0100 > /proc/sys/kernel/real-root-dev
