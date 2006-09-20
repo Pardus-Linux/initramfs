@@ -7,7 +7,7 @@ LOOP="pardus.img"
 CDROOT=0
 QUIET=0
 ROOT_DEVICE=''
-BOOT_DEVICES="hd?"
+IMG_DEVICES="hd?"
 
 probe_devices() {
     echo "Probing devices"
@@ -49,6 +49,7 @@ findcdmount() {
                 # Check for cdroot image
                 if [ -e /newroot/mnt/cdrom/${LOOP} ]
                 then
+                    echo "found cdroot in ${x}"
                     ROOT_DEVICE="${x}"
                     break
                 else
@@ -63,14 +64,14 @@ manage_tmpfs() {
     echo "Managing tempfs"
     mount -t tmpfs tmpfs /newroot
 
-    for d in "dev mnt mnt/cdrom mnt/livecd tmp sys proc"
+    for ndir in dev mnt mnt/cdrom mnt/livecd tmp sys proc
     do
-        mkdir /newroot/${d}
+        mkdir -p "/newroot/${ndir}"
     done
 
     mv /dev/* /newroot/dev/
 
-    findcdmount "/newroot/dev/${BOOT_DEVICES}"
+    findcdmount "/newroot/dev/${IMG_DEVICES}"
 }
 
 mount_cdroot() {
@@ -94,16 +95,14 @@ mount_cdroot() {
     done
 
     echo "Managing links and files"
-    mkdir initrd proc tmp sys
     chmod 1777 tmp
     (cd /newroot/${FS_LOCATION}; cp -a ${ROOT_TREES} /newroot)
 }
 
-
 # ----- main -------
 # mount -o remount,rw /
-mount -n -t proc proc /proc
-mount -n -t sysfs sys /sys
+mount -n -t proc proc /proc > /dev/null 2>&1
+mount -n -t sysfs sys /sys > /dev/null 2>&1
 
 parse_cmdline
 [ -n "$QUIET" ] && echo '0' > /proc/sys/kernel/printk
@@ -131,7 +130,7 @@ umount -n /proc
 [ "${INIT}" == "" ] && INIT="/sbin/init";
 
 # just to make sure, may not be necessary
-# [ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
+[ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
 
 # switch_root and pass init arguments
 exec /bin/switch_root -c /dev/console /newroot ${INIT} ${LEVEL}
