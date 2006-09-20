@@ -83,7 +83,6 @@ mount -n -t sysfs sys /sys
 
 # Prepare for switch root
 echo 0x0100 > /proc/sys/kernel/real-root-dev
-ROOT_DEVICE=`cat /proc/cmdline | awk -Froot= '{print $2}' | awk '{print $1}'`
 
 #check for any change to default runlevel
 for x in `cat /proc/cmdline`; do
@@ -94,10 +93,15 @@ for x in `cat /proc/cmdline`; do
         mudur=*livecd*)
             CDROOT=1
         ;;
+        root=*)
+            ROOT_DEVICE=`echo ${x}|cut -f2 -d=`
+        ;;
+        init=*)
+            INIT=`echo ${x}|cut -f2 -d=`
+        ;;
     esac
 done
 
-INIT=`cat /proc/cmdline | awk -Finit= '{print $2}' | awk '{print $1}'`
 [ "${INIT}" == "" ] && INIT="/sbin/init";
 
 # mount real root
