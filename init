@@ -102,6 +102,8 @@ mount_cdroot() {
 mount -n -t proc proc /proc
 mount -n -t sysfs sys /sys
 
+parse_cmdline
+[ "${INIT}" == "" ] && INIT="/sbin/init";
 
 # -------------------------- main cd ---------------------------------------
 mkdir /newroot
@@ -136,13 +138,8 @@ exec /bin/sh
 
 
 # --------------------------- main hdd ----------------------------------------
-
 # Prepare for switch root
 echo 0x0100 > /proc/sys/kernel/real-root-dev
-
-parse_cmdline
-
-[ "${INIT}" == "" ] && INIT="/sbin/init";
 
 # mount real root
 mount -t auto -n -o ro $ROOT_DEVICE /newroot
