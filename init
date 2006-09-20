@@ -96,8 +96,44 @@ mount_cdroot() {
 }
 
 
+# -------------------------- main cd ---------------------------------------
+mount -o remount,rw /
+mount -t proc proc /proc
+mkdir /newroot
 
-# mount proc and sys
+CMDLINE=`cat /proc/cmdline`
+[ -n "$QUIET" ] && echo '0' > /proc/sys/kernel/printk
+
+manage_tmpfs
+mount_cdroot
+
+# just to make sure, may not be necessary
+[ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
+
+echo "About to pivotroot"
+cd /newroot
+mkdir /newroot/proc /newroot/sys 2>/dev/null
+pivot_root . tmp/.initrd
+
+umount -n /tmp/.initrd/proc > /dev/null 2>&1
+umount -n /tmp/.initrd/sys > /dev/null 2>&1
+
+# exec chroot . /sbin/init </dev/console >/dev/console 2>&1
+echo "Final chroot"
+exec <dev/console >dev/console 2>&1
+# echo '.'
+exec chroot . /bin/sh <<- EOF
+     umount -n /tmp/.initrd > /dev/null 2>&1
+    /sbin/blockdev --flushbufs /dev/ram0 >/dev/null 2>&1
+     exec /sbin/init ${LEVEL}
+EOF
+
+echo 'A fatal error has occured. Running  shell...'
+echo
+exec /bin/sh
+
+
+# --------------------------- main hdd ----------------------------------------
 mount -n -t proc proc /proc
 mount -n -t sysfs sys /sys
 
@@ -105,7 +141,6 @@ mount -n -t sysfs sys /sys
 echo 0x0100 > /proc/sys/kernel/real-root-dev
 
 parse_cmdline
-
 
 [ "${INIT}" == "" ] && INIT="/sbin/init";
 
