@@ -5,7 +5,7 @@ ROOT_LINKS='bin sbin lib boot usr opt'
 ROOT_TREES='etc root home var'
 LOOP="pardus.img"
 CDROOT=0
-QUIET=1
+QUIET=0
 ROOT_DEVICE=''
 
 
@@ -28,6 +28,9 @@ parse_cmdline() {
             ;;
             init=*)
                 INIT=`echo ${x}|cut -f2 -d=`
+            ;;
+            quiet)
+                QUIET=1
             ;;
         esac
     done
@@ -60,8 +63,6 @@ manage_tmpfs() {
     echo "Managing tempfs"
     mount -t tmpfs tmpfs /newroot
     mkdir /newroot/dev /newroot/mnt /newroot/mnt/cdrom /newroot/mnt/livecd /newroot/tmp /newroot/tmp/.initrd /newroot/sys
-
-    mount -t sysfs sys /sys 2> /dev/null
 
     probe_devices
     mv /dev/* /newroot/dev/
@@ -96,19 +97,20 @@ mount_cdroot() {
 }
 
 
+# ----- main -------
+# mount -o remount,rw /
+mount -n -t proc proc /proc
+mount -n -t sysfs sys /sys
+
+
 # -------------------------- main cd ---------------------------------------
-mount -o remount,rw /
-mount -t proc proc /proc
 mkdir /newroot
 
-CMDLINE=`cat /proc/cmdline`
 [ -n "$QUIET" ] && echo '0' > /proc/sys/kernel/printk
 
 manage_tmpfs
 mount_cdroot
 
-# just to make sure, may not be necessary
-[ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
 
 echo "About to pivotroot"
 cd /newroot
@@ -134,8 +136,6 @@ exec /bin/sh
 
 
 # --------------------------- main hdd ----------------------------------------
-mount -n -t proc proc /proc
-mount -n -t sysfs sys /sys
 
 # Prepare for switch root
 echo 0x0100 > /proc/sys/kernel/real-root-dev
@@ -151,5 +151,9 @@ mount -t auto -n -o ro $ROOT_DEVICE /newroot
 umount /sys
 umount /proc
 
+# just to make sure, may not be necessary
+# [ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
+
 # switch_root and pass init arguments
 exec /bin/switch_root -c /dev/console /newroot ${INIT} ${LEVEL}
+
