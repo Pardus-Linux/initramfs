@@ -496,9 +496,7 @@ if [ ! -z $DSDT ]; then
 fi
 
 # Create initramfs
-#FIXME: Disable gzip until kernel issue solved
-#(cd ${MOUNT_IMAGE} && find . | cpio --quiet -o -H newc | gzip -9 >${INITRD})
-(cd ${MOUNT_IMAGE} && find . | cpio --quiet --dereference -o -H newc >${INITRD})
+(cd ${MOUNT_IMAGE} && find . | cpio --quiet --dereference -o -H newc | gzip -9 >${INITRD})
 
 # Remove all temp files
 cleantemp
