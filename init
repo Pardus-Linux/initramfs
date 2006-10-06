@@ -32,6 +32,10 @@ parse_cmdline() {
             mudur=*livecd*)
                 CDROOT=1
             ;;
+            mudur=*livedisk*)
+                CDROOT=1
+                IMG_DEVICES="hd[a-z][0-9]* sd[a-z][0-9]*"
+            ;;
             root=*)
                 ROOT_DEVICE=`echo ${x}|cut -f2 -d=`
             ;;
