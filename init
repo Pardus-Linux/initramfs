@@ -11,7 +11,7 @@ LOOP="pardus.img"
 CDROOT=0
 QUIET=0
 ROOT_DEVICE=''
-IMG_DEVICES="hd? sr*"
+IMG_DEVICES="hd[a-z] sr[0-9]* scd[a-z]"
 
 
 fall2sh() {
