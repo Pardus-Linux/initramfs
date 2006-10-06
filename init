@@ -159,6 +159,6 @@ umount -n /proc
 # just to make sure, may not be necessary
 [ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
 
-# final mount
+# and we start
 exec /bin/switch_root -c /dev/console /newroot ${INIT} ${LEVEL}
 
