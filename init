@@ -11,7 +11,7 @@ LOOP="pardus.img"
 CDROOT=0
 QUIET=0
 ROOT_DEVICE=''
-IMG_DEVICES="hd?"
+IMG_DEVICES="hd? sr*"
 
 
 fall2sh() {
@@ -117,7 +117,14 @@ if [ "${CDROOT}" -eq '1' ]
 then
     ROOT_DEVICE=''
     manage_tmpfs
-    findcdmount "/newroot/dev/${IMG_DEVICES}"
+    for t in ${IMG_DEVICES}
+    do
+        findcdmount "/newroot/dev/$t"
+        if [ "${ROOT_DEVICE}" != "" ]
+        then
+            break
+        fi
+    done
 
     if [ "${ROOT_DEVICE}" == "" ]
     then
@@ -142,5 +149,7 @@ umount -n /proc
 
 # just to make sure, may not be necessary
 [ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
+
+# final mount
 exec /bin/switch_root -c /dev/console /newroot ${INIT} ${LEVEL}
 
