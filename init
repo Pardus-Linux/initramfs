@@ -7,6 +7,7 @@
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
 ROOT_LINKS='bin sbin lib boot usr opt'
 ROOT_TREES='etc root home var'
+TMPFS_DIRS='dev mnt mnt/cdrom mnt/livecd tmp sys proc media'
 LOOP="pardus.img"
 CDROOT=0
 QUIET=0
@@ -74,12 +75,15 @@ findcdmount() {
 manage_tmpfs() {
     mount -t tmpfs tmpfs /newroot
 
-    for d in dev mnt mnt/cdrom mnt/livecd tmp sys proc
+    for d in ${TMPFS_DIRS}
     do
         mkdir -p "/newroot/${d}"
     done
 
     mv /dev/* /newroot/dev/
+
+    # just to make sure, may not be necessary
+    [ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
 }
 
 mount_cdroot() {
@@ -155,9 +159,6 @@ umount -n /sys
 umount -n /proc
 
 [ "${INIT}" == "" ] && INIT="/sbin/init";
-
-# just to make sure, may not be necessary
-[ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
 
 # and we start
 exec /bin/switch_root -c /dev/console /newroot ${INIT} ${LEVEL}
