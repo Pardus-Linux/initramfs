@@ -16,7 +16,7 @@ IMG_DEVICES="hd[a-z] sr[0-9]* scd[a-z]"
 
 
 fall2sh() {
-    echo "$*"
+    echo "--> $*"
     /bin/sh
 }
 
