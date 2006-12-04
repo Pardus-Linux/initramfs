@@ -465,7 +465,10 @@ for module in $MODULES; do
     fi    
 
     if [ "$modulepath" -a "$REMOVE_MOD" != "1" ]; then
-        cp $modulepath $MOUNT_IMAGE/lib/modules/$KERNEL_VERSION/
+        # We have to make an ugly hack here, as module-name does not match module_name in modules.alias
+        ugly=`echo "$modulepath"|sed -e 's/.*\///' -e 's/-/_/'`
+        # echo "$modulepath -> $ugly"
+        cp "$modulepath" "$MOUNT_IMAGE/lib/modules/$KERNEL_VERSION/$ugly"
         COPIED_MODULES="$COPIED_MODULES $module"
     fi
 done
