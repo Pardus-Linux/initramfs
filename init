@@ -120,7 +120,7 @@ then
 fi
 
 # Shall be decided later
-# [ -n "$QUIET" ] && echo '0' > /proc/sys/kernel/printk
+[ -n "$QUIET" ] && echo '1' > /proc/sys/kernel/printk
 
 probe_devices
 
