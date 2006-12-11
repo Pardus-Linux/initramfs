@@ -135,12 +135,22 @@ if [ "${CDROOT}" -eq '1' ]
 then
     ROOT_DEVICE=''
     manage_tmpfs
-    for t in ${IMG_DEVICES}
+    for i in 1 2 3 4 5
     do
-        findcdmount "/newroot/dev/$t"
+        for t in ${IMG_DEVICES}
+        do
+            findcdmount "/newroot/dev/$t"
+            if [ "${ROOT_DEVICE}" != "" ]
+            then
+                break
+            fi
+        done
         if [ "${ROOT_DEVICE}" != "" ]
         then
             break
+        else
+            probe_devices
+            sleep 1
         fi
     done
 
@@ -152,6 +162,16 @@ then
     mount_cdroot
 else
     # mount real root
+    for i in 1 2 3 4 5
+    do
+        if [ ! -b "${ROOT_DEVICE}" ]
+        then
+            probe_devices
+            sleep 1
+        else
+            break
+        fi
+    done
     if [ ! -b "${ROOT_DEVICE}" ]
     then
         fall2sh "Could not find boot device"
