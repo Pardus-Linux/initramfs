@@ -23,8 +23,9 @@ usage () {
 	echo "    --usb                    exclude usb modules"
 	echo "    --cdrom                  exclude cdrom modules"
 	echo "    --fw                     exclude firewire modules"
+	echo "    --fs                     exclude filesystem modules"
 	echo "    --remove-module=MODULE   exclude MODULE"
-	echo "    --add-module=MODULE      include MODULE"    
+	echo "    --add-module=MODULE      include MODULE"
 	echo "                             instead of /lib/modules"
     echo ""
     echo "    --fbsplash               add fbsplash theme into initramfs (--fbsplash=pardus)"
@@ -114,6 +115,11 @@ for option in $*; do
 		-fw|--fw)
 			REMOVE_FW="1"
 			outp "    Removing FW Modules"
+			;;
+
+		-fs|--fs)
+			REMOVE_FS="1"
+			outp "    Removing FILESYSTEM Modules"
 			;;
 
 		-module=*|--remove-module=*)
@@ -336,7 +342,7 @@ if [ "$REMOVE_FS" == "1" ]; then
 else
 	PRE_FS=""
 	if  [ "$FILESYSTEMS" == "" ]; then
-		FS_MODULES="ext2 reiser4 ext3 jfs reiserfs xfs"
+		FS_MODULES="ext2 reiser4 ext3 jfs reiserfs xfs vfat ntfs unionfs cramfs nls_utf8"
 	else
 		FS_MODULES="$FILESYSTEMS"
 	fi	
