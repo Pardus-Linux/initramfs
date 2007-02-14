@@ -41,6 +41,9 @@ parse_cmdline() {
             root=*)
                 ROOT_DEVICE=`echo ${x}|cut -f2 -d=`
             ;;
+            resume=*)
+                RESUME_DEVICE=`echo ${x}|cut -f2 -d=`
+            ;;
             init=*)
                 INIT=`echo ${x}|cut -f2 -d=`
             ;;
@@ -128,6 +131,9 @@ fi
 [ -n "$QUIET" ] && echo '1' > /proc/sys/kernel/printk
 
 probe_devices
+
+# Write resume device to /sys/power/resume for SATA disks
+/bin/stat -c%t:%T $RESUME_DEVICE > /sys/power/resume
 
 echo 0x0100 > /proc/sys/kernel/real-root-dev
 
