@@ -14,7 +14,7 @@ QUIET=0
 ROOT_DEVICE=''
 IMG_DEVICES="hd[a-z] sr[0-9]* scd[a-z]"
 MNTDIR=''
-
+RESUME_DEVICE=''
 
 fall2sh() {
     echo "--> $*"
@@ -133,7 +133,10 @@ fi
 probe_devices
 
 # Write resume device to /sys/power/resume for SATA disks
-/bin/stat -c%t:%T $RESUME_DEVICE > /sys/power/resume
+if [ "${RESUME_DEVICE}" != "" ]
+then
+    /bin/stat -c%t:%T $RESUME_DEVICE > /sys/power/resume
+fi
 
 echo 0x0100 > /proc/sys/kernel/real-root-dev
 
