@@ -86,6 +86,9 @@ manage_tmpfs() {
 
     mv /dev/* /newroot/dev/
 
+    # coolplug may continue making nodes
+    mount -o bind /newroot/dev /dev
+
     # just to make sure, may not be necessary
     [ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
 }
@@ -93,7 +96,6 @@ manage_tmpfs() {
 mount_cdroot() {
     cd /newroot
     # Loop type squashfs
-    mount -o bind /newroot/dev /dev
     mount -t squashfs -o loop,ro /newroot/mnt/cdrom/${LOOP} /newroot/mnt/livecd
 
     if [ "$?" != '0' ]
