@@ -30,6 +30,7 @@ usage () {
     echo ""
     echo "    --fbsplash               add fbsplash theme into initramfs (--fbsplash=pardus)"
     echo "    --dsdt                   add modified dsdt into initramfs (--dsdt=/boot/DSDT.aml)"
+    echo "    --net                    add some of the preselected ethernet modules"
 	echo "    --root-dir=DIR           look for modules in ROOT_DIR/lib/modules"
 	echo "    --output=DIR             create initramfs in DIR"
     echo ""
@@ -160,6 +161,10 @@ for option in $*; do
         --dsdt=*)
             DSDT="`echo $option | awk -F= '{print $2;}'`"
             ;;
+		-net|--net)
+			ADD_NET_MODULES=1
+			outp "    Adding some ethernet drivers"
+			;;
 		--fbsplash=*)
 			FBSPLASH_THEME="`echo $option | awk -F= '{print $2;}'`"
 			;;
@@ -342,11 +347,19 @@ if [ "$REMOVE_FS" == "1" ]; then
 else
 	PRE_FS=""
 	if  [ "$FILESYSTEMS" == "" ]; then
-		FS_MODULES="ext2 reiser4 ext3 jfs reiserfs xfs vfat ntfs unionfs cramfs nls_utf8"
+		FS_MODULES="ext2 reiser4 ext3 jfs reiserfs xfs vfat ntfs unionfs cramfs nls_utf8 nfs"
 	else
 		FS_MODULES="$FILESYSTEMS"
 	fi	
 	POST_FS=""
+fi
+
+if [ "$ADD_NET_MODULES" == "1" ]; then
+    PRE_NET="af_packet mii 8390"
+    NET_MODULES="via-rhine 8139too ne2k-pci"
+else
+    PRE_NET=""
+    NET_MODULES=""
 fi
 
 #
@@ -358,11 +371,13 @@ SATA_MODULES_GROUP="$PRE_SATA $SATA_MODULES $POST_SATA"
 USB_MODULES_GROUP="$PRE_USB $USB_MODULES $POST_USB"
 FW_MODULES_GROUP="$PRE_FW $FW_MODULES $POST_FW"
 FS_MODULES_GROUP="$PRE_FS $FS_MODULES $POST_FS"
+NET_MODULES_GROUP="$PRE_NET $NET_MODULES"
 
 #
 # List of All Needed Modules
 #
-MODULES="$IDE_MODULES_GROUP $SCSI_MODULES_GROUP $SATA_MODULES_GROUP $USB_MODULES_GROUP $FW_MODULES_GROUP $FS_MODULES_GROUP $ADD_MODULE"
+# FIXME: we need --net for ethernet drivers. af_packet may be builtin.
+MODULES="$IDE_MODULES_GROUP $SCSI_MODULES_GROUP $SATA_MODULES_GROUP $USB_MODULES_GROUP $FW_MODULES_GROUP $FS_MODULES_GROUP $NET_MODULES_GROUP $ADD_MODULE"
 
 #
 # Find the module dependencies
@@ -408,6 +423,9 @@ mknod $MOUNT_IMAGE/dev/tty c 5 0
 mknod $MOUNT_IMAGE/dev/tty1 c 4 0
 mknod $MOUNT_IMAGE/dev/ram0 b 1 0
 
+# urandom needed by udhcpc
+mknod $MOUNT_IMAGE/dev/urandom c 1 9
+
 # loopback devices, we need lots
 mkdir $MOUNT_IMAGE/dev/loop
 for i in `seq 0 7`; do
@@ -433,6 +451,10 @@ cp -a /sbin/coolplug $MOUNT_IMAGE/bin/coolplug
 # install init script
 cp /lib/initramfs/init $MOUNT_IMAGE/init
 chmod +x $MOUNT_IMAGE/init
+
+# install udhcp script
+cp /lib/initramfs/udhcpc.script $MOUNT_IMAGE/etc/udhcpc.script
+chmod +x $MOUNT_IMAGE/etc/udhcpc.script
 
 # add filesystem check to avoid VFS warnings during boot
 echo "none none none defaults 0 0" >> $MOUNT_IMAGE/etc/fstab

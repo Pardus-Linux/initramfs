@@ -1,15 +1,16 @@
 #!/bin/sh
 #
 # Simple init script that should handle both 
-# livecd/tmpfs boot and hdd boot
+# livecd/tmpfs, thinclient and hdd boot
 #
 
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
 ROOT_LINKS='bin sbin lib boot usr opt'
 ROOT_TREES='etc root home var'
-TMPFS_DIRS='dev mnt mnt/cdrom mnt/livecd tmp sys proc media'
+TMPFS_DIRS='dev mnt mnt/cdrom mnt/livecd mnt/thin tmp sys proc media'
 LOOP="pardus.img"
 CDROOT=0
+NFSROOT=0
 QUIET=0
 ROOT_DEVICE=''
 IMG_DEVICES="hd[a-z] sr[0-9]* scd[a-z]"
@@ -30,6 +31,9 @@ parse_cmdline() {
         case "${x}" in
             [0123456Ss])
                 LEVEL=${x}
+            ;;
+	    mudur=*thin*)
+                NFSROOT=1
             ;;
             mudur=*livecd*)
                 CDROOT=1
@@ -91,6 +95,50 @@ manage_tmpfs() {
 
     # just to make sure, may not be necessary
     [ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
+}
+
+run_dhcpc() {
+    # FIXME: built in kernel?
+    modprobe af_packet
+    udhcpc -i eth0 -s /etc/udhcpc.script
+}
+
+mount_nfs() {
+    cd /newroot
+
+    # FIXME: busybox mount does not load automatically
+    modprobe nfs
+
+    # mount nfs
+    if [ -z "/etc/udhcpc.info" ]
+    then
+        fall2sh "/etc/udhcpc.info not found"
+    fi
+
+    . /etc/udhcpc.info
+
+    if [ -z "${ROOTPATH}" ]
+    then
+        fall2sh "NFS rootpath not found"
+    fi
+
+    echo "Mounting NFS from $ROOTPATH"
+    mount -o nolock,ro $ROOTPATH /newroot/mnt/thin
+
+    if [ "$?" != '0' ]
+    then
+        fall2sh "Could not nfs root"
+    fi
+
+    FS_LOCATION='mnt/thin'
+
+    for x in ${ROOT_LINKS}
+    do
+        ln -s "${FS_LOCATION}/${x}" "${x}"
+    done
+
+    chmod 1777 tmp
+    (cd /newroot/${FS_LOCATION}; cp -a ${ROOT_TREES} /newroot)
 }
 
 mount_cdroot() {
@@ -171,6 +219,14 @@ then
     fi
 
     mount_cdroot
+elif [ "${NFSROOT}" -eq '1' ]
+then
+    run_dhcpc
+    manage_tmpfs
+    mount_nfs
+
+    # set hostname for mudur
+    hostname $HOSTNAME
 else
     # mount real root
     for i in `seq 10`
