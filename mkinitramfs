@@ -47,7 +47,7 @@ outp() {
 }
 
 cleantemp() {
-    rm -rf $MOUNT_IMAGE 
+    rm -rf $MOUNT_IMAGE
     rm -f /tmp/foundmodules
     rm -f /tmp/config
     rm -f /tmp/kernelversion
@@ -71,7 +71,7 @@ done
 cleantemp
 
 for option in $*; do
-    case $option in 
+    case $option in
         kernel=*)
             KERNEL_VERSION="`echo $option | awk -F= '{print $2;}'`"
         ;;
@@ -80,8 +80,8 @@ for option in $*; do
         ;;
         auto)
             KERNEL_VERSION=`uname -r`
-    esac     
-done    
+    esac
+done
 
 KERNEL_NAME="`echo $KERNEL_VERSION | sed -e s@2\.6\.*-@@g`"
 KERNEL_INITRD="initramfs-${KERNEL_VERSION}"
@@ -92,7 +92,7 @@ if [ -z "$KERNEL_NAME" ]; then
 fi
 
 for option in $*; do
-    case $option in        
+    case $option in
 		-ide|--ide)
 			REMOVE_IDE="1"
 			outp "    Removing IDE Modules"
@@ -140,7 +140,7 @@ for option in $*; do
 			fi
 			;;
 
-		--full)	
+		--full)
 			# Disable whole subsystems by adding "1"
 			REMOVE_IDE=
 			REMOVE_SCSI=
@@ -201,7 +201,7 @@ outp "Setting up Parameters..."
 finddep () {
 	for module in $MODULES; do
         ADDMOD=`grep "/$module.ko:" $ROOT_DIR/lib/modules/$KERNEL_VERSION/modules.dep | awk -F": " '{print $2}' | sed -e "s/ /\n/g" | sed -ne "s#.*/\(.*\)\.ko.*#\1#p"`
-        FOUNDMODULES="$FOUNDMODULES $ADDMOD $module" 
+        FOUNDMODULES="$FOUNDMODULES $ADDMOD $module"
 	done
 }
 
@@ -220,7 +220,7 @@ else
 		if [ "$HOSTCONTROLLER_IDE" == "" ]; then
 			CHECK="`ls -1 $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/ide/pci/* > /tmp/ide; \
     			sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/ide; cat /tmp/ide`"
-			for check in $CHECK; do	
+			for check in $CHECK; do
 				IDE_MODULE="`echo $check`"
 				IDE_MODULES="$IDE_MODULES $IDE_MODULE"
 			done
@@ -234,14 +234,14 @@ else
 			else
 				POST_IDE=""
 			fi
-			
+
 		else
 			if ! [ "$IDE_MODULES" == "" ]; then
 				POST_IDE="ide-disk cdrom ide-cd ide-floppy"
 			else
 				POST_IDE=""
 			fi
-			
+
 		fi
 	fi
 fi
@@ -260,7 +260,7 @@ else
 			    find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/message/fusion/ -name "*.ko" >>/tmp/scsi ; \
                 find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/block/ -name "*.ko" ! -name "*s8x.ko" ! -name "*nbd.ko" ! -name "*pktcdvd.ko" >> /tmp/scsi ; \
     			sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/scsi; cat /tmp/scsi`"
-			for check in $CHECK; do	
+			for check in $CHECK; do
 			    SCSI_MODULE="`echo $check`"
     			SCSI_MODULES="$SCSI_MODULES $SCSI_MODULE"
 			done
@@ -295,7 +295,7 @@ else
 			CHECK="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi/ -name "sata*" ! -name "ide-scsi*" ! -name "*_cs*" >/tmp/sata; \
                 find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/block/ -name "*s8x.ko"; \
 		    	sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/sata; cat /tmp/sata`"
-			for check in $CHECK; do	
+			for check in $CHECK; do
 				SATA_MODULE="`echo $check`"
 				SATA_MODULES="$SATA_MODULES $SATA_MODULE"
 			done
@@ -316,7 +316,7 @@ if [ "$REMOVE_USB" == "1" ]; then
 	POST_USB=""
 else
 	PRE_USB="sd_mod usbcore"
-		
+
 	if  [ "$HOSTCONTROLLER_USB" == "" ]; then
 		USB_MODULES="ehci-hcd ohci-hcd uhci-hcd"
 	else
@@ -350,7 +350,7 @@ else
 		FS_MODULES="ext2 reiser4 ext3 jfs reiserfs xfs vfat ntfs unionfs cramfs nls_utf8 nfs"
 	else
 		FS_MODULES="$FILESYSTEMS"
-	fi	
+	fi
 	POST_FS=""
 fi
 
@@ -476,7 +476,7 @@ MODULES=`echo "$FOUNDMODULES"|sed 's@-@_@g'`
 # Loop through all the modules
 for module in $MODULES; do
     REMOVE_MOD="0"
-      
+
     # Check blacklist
     for dead in $REMOVE_MODULE; do
         dead=`echo $dead|sed 's@-@_@g'`
@@ -484,13 +484,13 @@ for module in $MODULES; do
             REMOVE_MOD="1"
         fi
     done
-    
+
     # Ensure both - and _ named modules are accounted again
     modulepath="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel -name ${module}.ko`"
     if [ -z "$modulepath" ]; then
         module=`echo $module|sed 's@_@-@g'`
         modulepath="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel -name ${module}.ko`"
-    fi    
+    fi
 
     if [ "$modulepath" -a "$REMOVE_MOD" != "1" ]; then
         # We have to make an ugly hack here, as module-name does not match module_name in modules.alias
@@ -517,7 +517,7 @@ if [ ! -z $FBSPLASH_THEME ]; then
     # Splash_geninitramfs has poor error checking.
 fi
 
-# Custom DSDT Support 
+# Custom DSDT Support
 if [ ! -z $DSDT ]; then
     if [ -f $DSDT ]; then
         cp $DSDT $MOUNT_IMAGE/DSDT.aml
