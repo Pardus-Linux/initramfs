@@ -11,39 +11,39 @@
 # Usage Menu
 #
 usage () {
-	echo "$0 kernel [options]"
-	echo ""
-	echo "  kernel={version}   specify kernel to build initramfs for"
-	echo "  auto               will build for current running kernel (`uname -r`)"
+    echo "$0 kernel [options]"
     echo ""
-	echo "  Options:"
-	echo "    --full                   build with all possible modules"
-	echo "    --ide                    exclude ide modules"
-	echo "    --scsi                   exclude scsi modules"
-	echo "    --usb                    exclude usb modules"
-	echo "    --cdrom                  exclude cdrom modules"
-	echo "    --fw                     exclude firewire modules"
-	echo "    --fs                     exclude filesystem modules"
-	echo "    --remove-module=MODULE   exclude MODULE"
-	echo "    --add-module=MODULE      include MODULE"
-	echo "                             instead of /lib/modules"
+    echo "  kernel={version}   specify kernel to build initramfs for"
+    echo "  auto               will build for current running kernel (`uname -r`)"
+    echo ""
+    echo "  Options:"
+    echo "    --full                   build with all possible modules"
+    echo "    --ide                    exclude ide modules"
+    echo "    --scsi                   exclude scsi modules"
+    echo "    --usb                    exclude usb modules"
+    echo "    --cdrom                  exclude cdrom modules"
+    echo "    --fw                     exclude firewire modules"
+    echo "    --fs                     exclude filesystem modules"
+    echo "    --remove-module=MODULE   exclude MODULE"
+    echo "    --add-module=MODULE      include MODULE"
+    echo "                             instead of /lib/modules"
     echo ""
     echo "    --fbsplash               add fbsplash theme into initramfs (--fbsplash=pardus)"
     echo "    --dsdt                   add modified dsdt into initramfs (--dsdt=/boot/DSDT.aml)"
     echo "    --net                    add some of the preselected ethernet modules"
-	echo "    --root-dir=DIR           look for modules in ROOT_DIR/lib/modules"
-	echo "    --output=DIR             create initramfs in DIR"
+    echo "    --root-dir=DIR           look for modules in ROOT_DIR/lib/modules"
+    echo "    --output=DIR             create initramfs in DIR"
     echo ""
-	echo "    --quiet                  no status output during initramfs generation"
-	echo "    --show                   show modules that are included in initramfs"
-	echo ""
-	exit 1
+    echo "    --quiet                  no status output during initramfs generation"
+    echo "    --show                   show modules that are included in initramfs"
+    echo ""
+    exit 1
 }
 
 outp() {
-	if ! [ "$QUIET" == "1" ]; then
-		echo "$*"
-	fi
+    if ! [ "$QUIET" == "1" ]; then
+        echo "$*"
+    fi
 }
 
 cleantemp() {
@@ -63,9 +63,9 @@ QUIET=0
 FOUNDMODULES=
 
 for arg in $*; do
-	if [ "$arg" == "--quiet" ]; then
-		QUIET=1
-	fi
+    if [ "$arg" == "--quiet" ]; then
+        QUIET=1
+    fi
 done
 
 cleantemp
@@ -93,84 +93,84 @@ fi
 
 for option in $*; do
     case $option in
-		-ide|--ide)
-			REMOVE_IDE="1"
-			outp "    Removing IDE Modules"
-			;;
+        -ide|--ide)
+            REMOVE_IDE="1"
+            outp "    Removing IDE Modules"
+            ;;
 
-		-scsi|--scsi)
-			REMOVE_SCSI="1"
-			outp "    Removing SCSI Modules"
-			;;
+        -scsi|--scsi)
+            REMOVE_SCSI="1"
+            outp "    Removing SCSI Modules"
+            ;;
 
-		-cdrom|--cdrom)
-			REMOVE_CDROM="1"
-			outp "    Removing CDROM Modules"
-			;;
+        -cdrom|--cdrom)
+            REMOVE_CDROM="1"
+            outp "    Removing CDROM Modules"
+            ;;
 
-		-usb|--usb)
-			REMOVE_USB="1"
-			outp "    Removing USB Modules"
-			;;
+        -usb|--usb)
+            REMOVE_USB="1"
+            outp "    Removing USB Modules"
+            ;;
 
-		-fw|--fw)
-			REMOVE_FW="1"
-			outp "    Removing FW Modules"
-			;;
+        -fw|--fw)
+            REMOVE_FW="1"
+            outp "    Removing FW Modules"
+            ;;
 
-		-fs|--fs)
-			REMOVE_FS="1"
-			outp "    Removing FILESYSTEM Modules"
-			;;
+        -fs|--fs)
+            REMOVE_FS="1"
+            outp "    Removing FILESYSTEM Modules"
+            ;;
 
-		-module=*|--remove-module=*)
- 			NEW_MODULE="`echo $option | awk -F= '{print $2;}'`"
-			outp "    Removing Module $NEW_MODULE"
-			REMOVE_MODULE="$REMOVE_MODULE $NEW_MODULE"
-			;;
+        -module=*|--remove-module=*)
+             NEW_MODULE="`echo $option | awk -F= '{print $2;}'`"
+            outp "    Removing Module $NEW_MODULE"
+            REMOVE_MODULE="$REMOVE_MODULE $NEW_MODULE"
+            ;;
 
-		+module=*|--add-module=*)
-			if [ "$ADD_MODULE" == "" ]; then
-				ADD_MODULE="`echo $option | awk -F= '{print $2;}'`"
-				outp "    Adding Module $ADD_MODULE"
-			else
-				NEW_MODULE="`echo $option | awk -F= '{print $2;}'`"
-				outp "    Adding Module $NEW_MODULE"
-				ADD_MODULE="$ADD_MODULE $NEW_MODULE"
-			fi
-			;;
+        +module=*|--add-module=*)
+            if [ "$ADD_MODULE" == "" ]; then
+                ADD_MODULE="`echo $option | awk -F= '{print $2;}'`"
+                outp "    Adding Module $ADD_MODULE"
+            else
+                NEW_MODULE="`echo $option | awk -F= '{print $2;}'`"
+                outp "    Adding Module $NEW_MODULE"
+                ADD_MODULE="$ADD_MODULE $NEW_MODULE"
+            fi
+            ;;
 
-		--full)
-			# Disable whole subsystems by adding "1"
-			REMOVE_IDE=
-			REMOVE_SCSI=
-			REMOVE_SATA=
-			REMOVE_CDROM=
-			REMOVE_USB=
-			REMOVE_FW=
-			REMOVE_FS=
-			# Define which modules are needed by adding "moduleX moduleY"
-			# empty means all modules are included if they are not disabled above!
-			HOSTCONTROLLER_IDE=
-			HOSTCONTROLLER_SCSI=
-			HOSTCONTROLLER_SATA=
-			HOSTCONTROLLER_USB=
-			FILESYSTEMS=
-			outp "    Building full initramfs with all modules"
-			;;
+        --full)
+            # Disable whole subsystems by adding "1"
+            REMOVE_IDE=
+            REMOVE_SCSI=
+            REMOVE_SATA=
+            REMOVE_CDROM=
+            REMOVE_USB=
+            REMOVE_FW=
+            REMOVE_FS=
+            # Define which modules are needed by adding "moduleX moduleY"
+            # empty means all modules are included if they are not disabled above!
+            HOSTCONTROLLER_IDE=
+            HOSTCONTROLLER_SCSI=
+            HOSTCONTROLLER_SATA=
+            HOSTCONTROLLER_USB=
+            FILESYSTEMS=
+            outp "    Building full initramfs with all modules"
+            ;;
         --dsdt=*)
             DSDT="`echo $option | awk -F= '{print $2;}'`"
             ;;
-		-net|--net)
-			ADD_NET_MODULES=1
-			outp "    Adding some ethernet drivers"
-			;;
-		--fbsplash=*)
-			FBSPLASH_THEME="`echo $option | awk -F= '{print $2;}'`"
-			;;
-		--fbsplash_resolution=*)
-			FBSPLASH_RES="`echo $option | awk -F= '{print $2;}'`"
-			;;
+        -net|--net)
+            ADD_NET_MODULES=1
+            outp "    Adding some ethernet drivers"
+            ;;
+        --fbsplash=*)
+            FBSPLASH_THEME="`echo $option | awk -F= '{print $2;}'`"
+            ;;
+        --fbsplash_resolution=*)
+            FBSPLASH_RES="`echo $option | awk -F= '{print $2;}'`"
+            ;;
         --root-dir=*)
             ROOT_DIR="`echo $option | awk -F= '{print $2;}'`"
             ;;
@@ -181,14 +181,14 @@ for option in $*; do
                 exit 1
             fi
             ;;
-		-show|--show)
-			LIST_MODULES=1
-			;;
+        -show|--show)
+            LIST_MODULES=1
+            ;;
 
-		--quiet)
-			# already set above
-			;;
-	esac
+        --quiet)
+            # already set above
+            ;;
+    esac
 done
 
 outp "    Making image for kernel $KERNEL_VERSION..."
@@ -199,10 +199,10 @@ outp "Setting up Parameters..."
 # Find Dependencies
 #
 finddep () {
-	for module in $MODULES; do
+    for module in $MODULES; do
         ADDMOD=`grep "/$module.ko:" $ROOT_DIR/lib/modules/$KERNEL_VERSION/modules.dep | awk -F": " '{print $2}' | sed -e "s/ /\n/g" | sed -ne "s#.*/\(.*\)\.ko.*#\1#p"`
         FOUNDMODULES="$FOUNDMODULES $ADDMOD $module"
-	done
+    done
 }
 
 # Clean out temp files
@@ -212,146 +212,146 @@ cleantemp
 # Add or Remove IDE Modules
 #
 if [ "$REMOVE_IDE" == "1" ]; then
-	PRE_IDE=""
-	IDE_MODULES=""
-	POST_IDE=""
+    PRE_IDE=""
+    IDE_MODULES=""
+    POST_IDE=""
 else
-	if [ -d $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/ide/pci ]; then
-		if [ "$HOSTCONTROLLER_IDE" == "" ]; then
-			CHECK="`ls -1 $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/ide/pci/* > /tmp/ide; \
-    			sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/ide; cat /tmp/ide`"
-			for check in $CHECK; do
-				IDE_MODULE="`echo $check`"
-				IDE_MODULES="$IDE_MODULES $IDE_MODULE"
-			done
-		else
-			IDE_MODULES="$HOSTCONTROLLER_IDE"
-		fi
+    if [ -d $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/ide/pci ]; then
+        if [ "$HOSTCONTROLLER_IDE" == "" ]; then
+            CHECK="`ls -1 $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/ide/pci/* > /tmp/ide; \
+                sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/ide; cat /tmp/ide`"
+            for check in $CHECK; do
+                IDE_MODULE="`echo $check`"
+                IDE_MODULES="$IDE_MODULES $IDE_MODULE"
+            done
+        else
+            IDE_MODULES="$HOSTCONTROLLER_IDE"
+        fi
 
-		if [ "$REMOVE_CDROM" == "1" ]; then
-			if ! [ "$IDE_MODULES" == "" ]; then
-				POST_IDE="ide-disk ide-floppy"
-			else
-				POST_IDE=""
-			fi
+        if [ "$REMOVE_CDROM" == "1" ]; then
+            if ! [ "$IDE_MODULES" == "" ]; then
+                POST_IDE="ide-disk ide-floppy"
+            else
+                POST_IDE=""
+            fi
 
-		else
-			if ! [ "$IDE_MODULES" == "" ]; then
-				POST_IDE="ide-disk cdrom ide-cd ide-floppy"
-			else
-				POST_IDE=""
-			fi
+        else
+            if ! [ "$IDE_MODULES" == "" ]; then
+                POST_IDE="ide-disk cdrom ide-cd ide-floppy"
+            else
+                POST_IDE=""
+            fi
 
-		fi
-	fi
+        fi
+    fi
 fi
 
 #
 # Add or Remove SCSI Modules
 #
 if [ "$REMOVE_SCSI" == "1" ]; then
-	PRE_SCSI=""
-	SCSI_MODULES=""
-	POST_SCSI=""
+    PRE_SCSI=""
+    SCSI_MODULES=""
+    POST_SCSI=""
 else
-	if [ -d $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi ]; then
-		if [ "$HOSTCONTROLLER_SCSI" == "" ]; then
-			CHECK="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi/ -name "*.ko" ! -name "sata*" ! -name "ide-scsi*" ! -name "libata*" ! -name "*_cs*" >/tmp/scsi; \
-			    find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/message/fusion/ -name "*.ko" >>/tmp/scsi ; \
+    if [ -d $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi ]; then
+        if [ "$HOSTCONTROLLER_SCSI" == "" ]; then
+            CHECK="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi/ -name "*.ko" ! -name "sata*" ! -name "ide-scsi*" ! -name "libata*" ! -name "*_cs*" >/tmp/scsi; \
+                find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/message/fusion/ -name "*.ko" >>/tmp/scsi ; \
                 find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/block/ -name "*.ko" ! -name "*s8x.ko" ! -name "*nbd.ko" ! -name "*pktcdvd.ko" >> /tmp/scsi ; \
-    			sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/scsi; cat /tmp/scsi`"
-			for check in $CHECK; do
-			    SCSI_MODULE="`echo $check`"
-    			SCSI_MODULES="$SCSI_MODULES $SCSI_MODULE"
-			done
-			PRE_SCSI="sd_mod"
-		else
-			PRE_SCSI="sd_mod"
-			SCSI_MODULES="$HOSTCONTROLLER_SCSI"
-		fi
+                sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/scsi; cat /tmp/scsi`"
+            for check in $CHECK; do
+                SCSI_MODULE="`echo $check`"
+                SCSI_MODULES="$SCSI_MODULES $SCSI_MODULE"
+            done
+            PRE_SCSI="sd_mod"
+        else
+            PRE_SCSI="sd_mod"
+            SCSI_MODULES="$HOSTCONTROLLER_SCSI"
+        fi
 
-		if [ "$REMOVE_CDROM" == "1" ]; then
-			POST_SCSI=""
-		else
-			if ! [ "$SCSI_MODULES" == "" ]; then
-				POST_SCSI="cdrom sr_mod"
-			else
-				POST_SCSI=""
-			fi
-		fi
-	fi
+        if [ "$REMOVE_CDROM" == "1" ]; then
+            POST_SCSI=""
+        else
+            if ! [ "$SCSI_MODULES" == "" ]; then
+                POST_SCSI="cdrom sr_mod"
+            else
+                POST_SCSI=""
+            fi
+        fi
+    fi
 fi
 
 #
 # Add or Remove SATA Modules
 #
 if [ "$REMOVE_SATA" == "1" ]; then
-	PRE_SATA=""
-	SATA_MODULES=""
-	POST_SATA=""
+    PRE_SATA=""
+    SATA_MODULES=""
+    POST_SATA=""
 else
-	if [ -d $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi ]; then
-		if [ "$HOSTCONTROLLER_SATA" == "" ]; then
-			CHECK="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi/ -name "sata*" ! -name "ide-scsi*" ! -name "*_cs*" >/tmp/sata; \
+    if [ -d $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi ]; then
+        if [ "$HOSTCONTROLLER_SATA" == "" ]; then
+            CHECK="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi/ -name "sata*" ! -name "ide-scsi*" ! -name "*_cs*" >/tmp/sata; \
                 find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/block/ -name "*s8x.ko"; \
-		    	sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/sata; cat /tmp/sata`"
-			for check in $CHECK; do
-				SATA_MODULE="`echo $check`"
-				SATA_MODULES="$SATA_MODULES $SATA_MODULE"
-			done
-				PRE_SATA="sd_mod libata"
-		else
-			PRE_SATA="sd_mod libata"
-			SATA_MODULES="$HOSTCONTROLLER_SATA"
-		fi
-	fi
+                sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/sata; cat /tmp/sata`"
+            for check in $CHECK; do
+                SATA_MODULE="`echo $check`"
+                SATA_MODULES="$SATA_MODULES $SATA_MODULE"
+            done
+                PRE_SATA="sd_mod libata"
+        else
+            PRE_SATA="sd_mod libata"
+            SATA_MODULES="$HOSTCONTROLLER_SATA"
+        fi
+    fi
 fi
 
 #
 # Add or Remove USB Modules
 #
 if [ "$REMOVE_USB" == "1" ]; then
-	PRE_USB=""
-	USB_MODULES=""
-	POST_USB=""
+    PRE_USB=""
+    USB_MODULES=""
+    POST_USB=""
 else
-	PRE_USB="sd_mod usbcore"
+    PRE_USB="sd_mod usbcore"
 
-	if  [ "$HOSTCONTROLLER_USB" == "" ]; then
-		USB_MODULES="ehci-hcd ohci-hcd uhci-hcd"
-	else
-		USB_MODULES="$HOSTCONTROLLER_USB"
-	fi
-	POST_USB="usb-storage usbhid"
+    if  [ "$HOSTCONTROLLER_USB" == "" ]; then
+        USB_MODULES="ehci-hcd ohci-hcd uhci-hcd"
+    else
+        USB_MODULES="$HOSTCONTROLLER_USB"
+    fi
+    POST_USB="usb-storage usbhid"
 fi
 
 # Add or Remove FW Modules
 #
 if [ "$REMOVE_FW" == "1" ]; then
-	PRE_FW=""
-	FW_MODULES=""
-	POST_FW=""
+    PRE_FW=""
+    FW_MODULES=""
+    POST_FW=""
 else
-	PRE_FW="sd_mod ieee1394"
-	FW_MODULES="ohci1394"
-	POST_FW="sbp2"
+    PRE_FW="sd_mod ieee1394"
+    FW_MODULES="ohci1394"
+    POST_FW="sbp2"
 fi
 
 #
 # Add or Remove FS Modules
 #
 if [ "$REMOVE_FS" == "1" ]; then
-	PRE_FS=""
-	FS_MODULES=""
-	POST_FS=""
+    PRE_FS=""
+    FS_MODULES=""
+    POST_FS=""
 else
-	PRE_FS=""
-	if  [ "$FILESYSTEMS" == "" ]; then
-		FS_MODULES="ext2 reiser4 ext3 jfs reiserfs xfs vfat ntfs unionfs cramfs nls_utf8 nfs"
-	else
-		FS_MODULES="$FILESYSTEMS"
-	fi
-	POST_FS=""
+    PRE_FS=""
+    if  [ "$FILESYSTEMS" == "" ]; then
+        FS_MODULES="ext2 reiser4 ext3 jfs reiserfs xfs vfat ntfs unionfs cramfs nls_utf8 nfs"
+    else
+        FS_MODULES="$FILESYSTEMS"
+    fi
+    POST_FS=""
 fi
 
 if [ "$ADD_NET_MODULES" == "1" ]; then
@@ -397,10 +397,10 @@ fi
 # Check for Valid Kernel
 #
 if [ -e $ROOT_DIR/lib/modules/$KERNEL_VERSION ]; then
-	outp "    $ROOT_DIR/lib/modules/$KERNEL_VERSION found"
+    outp "    $ROOT_DIR/lib/modules/$KERNEL_VERSION found"
 else
-	echo "ERROR: $ROOT_DIR/lib/modules/$KERNEL_VERSION does not exist!" >&2
-	exit 1
+    echo "ERROR: $ROOT_DIR/lib/modules/$KERNEL_VERSION does not exist!" >&2
+    exit 1
 fi
 
 #
