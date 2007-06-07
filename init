@@ -139,6 +139,9 @@ mount_nfs() {
 
     chmod 1777 tmp
     (cd /newroot/${FS_LOCATION}; cp -a ${ROOT_TREES} /newroot)
+
+    # Needed for ltspfs mechanism
+    echo "$IP    $HOSTNAME" >> /newroot/etc/hosts
 }
 
 mount_cdroot() {
