@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # mkinitrd for 2.4/2.6 Kernel by Jim Gifford <scripts@j555.com>
 # modified by Tobias Powalowski <tpowa@archlinux.org> for Arch Linux usage
