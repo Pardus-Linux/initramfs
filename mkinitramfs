@@ -435,6 +435,13 @@ done
 # Install busybox and init script
 cp -a /sbin/busybox $MOUNT_IMAGE/bin/busybox
 cp -a /lib/initramfs/busybox.links $MOUNT_IMAGE/bin/busybox.links
+
+if [ -f "/etc/suspend.conf" ]; then
+    cp -a /etc/suspend.conf $MOUNT_IMAGE/etc/suspend.conf
+    cp -a /usr/sbin/resume $MOUNT_IMAGE/bin/resume
+fi
+
+cp -a /usr/bin/disktype $MOUNT_IMAGE/bin/disktype
 cd $MOUNT_IMAGE/bin/
 # or static lists...
 for f in `sed 's/.*\///' $MOUNT_IMAGE/bin/busybox.links`; do
@@ -446,6 +453,11 @@ ln $MOUNT_IMAGE/bin/busybox $MOUNT_IMAGE/sbin/modprobe
 
 # install coolplug
 cp -a /sbin/coolplug $MOUNT_IMAGE/bin/coolplug
+
+if [ -f "/sbin/mdadm.static" ]; then
+    cp -a /sbin/mdadm.static $MOUNT_IMAGE/bin/mdadm
+    cp -a /etc/mdadm.conf $MOUNT_IMAGE/etc/mdadm.conf
+fi
 
 # install init script
 cp /lib/initramfs/init $MOUNT_IMAGE/init
