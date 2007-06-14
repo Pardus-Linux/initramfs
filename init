@@ -65,7 +65,7 @@ findcdmount() {
         do
             mount -r ${x} /newroot/mnt/cdrom > /dev/null 2>&1
 
-            if [ "$?" = '0' ]
+            if [ "$?" = "0" ]
             then
                 # Check for cdroot image
                 if [ -e /newroot/mnt/cdrom/${LOOP} ]
@@ -181,7 +181,7 @@ then
 fi
 
 # Minimizing kernel noise
-[ -n "$QUIET" ] && echo '1' > /proc/sys/kernel/printk
+[ -n "$QUIET" ] && echo "1" > /proc/sys/kernel/printk
 
 probe_devices
 
@@ -193,9 +193,9 @@ fi
 
 echo 0x0100 > /proc/sys/kernel/real-root-dev
 
-if [ "${CDROOT}" -eq '1' ]
+if [ "${CDROOT}" -eq "1" ]
 then
-    ROOT_DEVICE=''
+    ROOT_DEVICE=""
     manage_tmpfs
     for i in `seq 10`
     do
