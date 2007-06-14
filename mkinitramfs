@@ -466,11 +466,8 @@ chmod +x $MOUNT_IMAGE/etc/udhcpc.script
 echo "none none none defaults 0 0" >> $MOUNT_IMAGE/etc/fstab
 touch $MOUNT_IMAGE/bin/fsck.ext2
 touch $MOUNT_IMAGE/bin/fsck.ext3
-touch $MOUNT_IMAGE/bin/fsck.jfs
 touch $MOUNT_IMAGE/bin/fsck.reiserfs
 touch $MOUNT_IMAGE/bin/fsck.xfs
-touch $MOUNT_IMAGE/bin/fsck.reiser4
-
 
 #
 # Copy Modules
