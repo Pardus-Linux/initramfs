@@ -45,15 +45,18 @@ parse_cmdline() {
             [0123456Ss])
                 LEVEL=${x}
             ;;
-            mudur=*thin*)
-                NFSROOT=1
-            ;;
             mudur=*livecd*)
                 CDROOT=1
             ;;
             mudur=*livedisk*)
                 CDROOT=1
                 IMG_DEVICES="hd[a-z][0-9]* sd[a-z][0-9]*"
+            ;;
+            mudur=*raid*)
+                RAID=1
+            ;;
+            mudur=*thin*)
+                NFSROOT=1
             ;;
             root=*)
                 ROOT_DEVICE=`echo ${x}|cut -f2 -d=`
