@@ -12,6 +12,7 @@ LOOP="pardus.img"
 CDROOT=0
 NFSROOT=0
 QUIET=0
+RAID=0
 ROOT_DEVICE=""
 IMG_DEVICES="hd[a-z] sr[0-9]* scd[a-z]"
 MNTDIR=""
@@ -25,6 +26,18 @@ fall2sh() {
 probe_devices() {
     /bin/coolplug 1> /dev/null 2>&1
 }
+
+probe_raid() {
+    /bin/modprobe dm-mod
+    /bin/modprobe raid0
+    /bin/modprobe raid1
+    /bin/modprobe raid2
+    /bin/modprobe raid3
+    /bin/modprobe raid4
+    /bin/modprobe raid5
+    /bin/mdadm -As
+}
+
 
 parse_cmdline() {
     for x in `cat /proc/cmdline`; do
@@ -185,9 +198,14 @@ fi
 
 probe_devices
 
-# Write resume device to /sys/power/resume for SATA disks
+if [ "${RAID}" -eq "1" ]
+then
+    probe_raid
+fi
+
 if [ "${RESUME_DEVICE}" != "" ]
 then
+    # Write resume device to /sys/power/resume for SATA disks
     /bin/stat -c%t:%T $RESUME_DEVICE > /sys/power/resume
 fi
 
