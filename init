@@ -5,17 +5,17 @@
 #
 
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
-ROOT_LINKS='bin sbin lib boot usr opt'
-ROOT_TREES='etc root home var'
-TMPFS_DIRS='dev mnt mnt/cdrom mnt/livecd mnt/thin tmp sys proc media'
+ROOT_LINKS="bin sbin lib boot usr opt"
+ROOT_TREES="etc root home var"
+TMPFS_DIRS="dev mnt mnt/cdrom mnt/livecd mnt/thin tmp sys proc media"
 LOOP="pardus.img"
 CDROOT=0
 NFSROOT=0
 QUIET=0
-ROOT_DEVICE=''
+ROOT_DEVICE=""
 IMG_DEVICES="hd[a-z] sr[0-9]* scd[a-z]"
-MNTDIR=''
-RESUME_DEVICE=''
+MNTDIR=""
+RESUME_DEVICE=""
 
 fall2sh() {
     echo "--> $*"
@@ -90,7 +90,7 @@ manage_tmpfs() {
 
     mv /dev/* /newroot/dev/
 
-    # coolplug may continue making nodes
+    # coolplug may continue making nodes
     mount -o bind /newroot/dev /dev
 
     # just to make sure, may not be necessary
@@ -149,11 +149,11 @@ mount_cdroot() {
     # Loop type squashfs
     mount -t squashfs -o loop,ro /newroot/mnt/cdrom/${LOOP} /newroot/mnt/livecd
 
-    if [ "$?" != '0' ]
+    if [ "$?" != "0" ]
     then
         fall2sh "Could not mount root image"
     fi
-    FS_LOCATION='mnt/livecd'
+    FS_LOCATION="mnt/livecd"
     umount /dev
 
     for x in ${ROOT_LINKS}
