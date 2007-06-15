@@ -294,6 +294,7 @@ else
         if [ "$HOSTCONTROLLER_SATA" == "" ]; then
             CHECK="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi/ -name "sata*" ! -name "ide-scsi*" ! -name "*_cs*" >/tmp/sata; \
                 find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/block/ -name "*s8x.ko"; \
+                find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/md/ -name "*.ko" >> /tmp/sata; \
                 sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/sata; cat /tmp/sata`"
             for check in $CHECK; do
                 SATA_MODULE="`echo $check`"
@@ -347,7 +348,7 @@ if [ "$REMOVE_FS" == "1" ]; then
 else
     PRE_FS=""
     if  [ "$FILESYSTEMS" == "" ]; then
-        FS_MODULES="ext2 reiser4 ext3 jfs reiserfs xfs vfat ntfs unionfs cramfs nls_utf8 nfs"
+        FS_MODULES="ext2 reiser4 ext3 jfs reiserfs xfs vfat fat ntfs unionfs cramfs nfs nls_utf8 nls_iso8859_9 nls_cp857 nls_iso8859-1 nls_ascii nls_cp850"
     else
         FS_MODULES="$FILESYSTEMS"
     fi
