@@ -357,7 +357,7 @@ fi
 
 if [ "$ADD_NET_MODULES" == "1" ]; then
     PRE_NET="af_packet mii 8390"
-    NET_MODULES="via-rhine 8139too ne2k-pci e100 sky2"
+    NET_MODULES="via-rhine 8139too ne2k-pci e100 sky2 tg3 skge"
 else
     PRE_NET=""
     NET_MODULES=""
