@@ -14,9 +14,10 @@ NFSROOT=0
 QUIET=0
 RAID=0
 ROOT_DEVICE=""
+RESUME_DEVICE=""
 IMG_DEVICES="hd[a-z] sr[0-9]* scd[a-z]"
 MNTDIR=""
-RESUME_DEVICE=""
+
 
 fall2sh() {
     echo "--> $*"
@@ -33,6 +34,7 @@ probe_raid() {
     /bin/modprobe raid1
     /bin/modprobe raid10
     /bin/modprobe raid456
+    /bin/mdadm --examine --scan > /etc/mdadm.conf
     /bin/mdadm -As
 }
 

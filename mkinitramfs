@@ -452,7 +452,6 @@ cp -a /sbin/coolplug $MOUNT_IMAGE/bin/coolplug
 
 if [ -f "/sbin/mdadm.static" ]; then
     cp -a /sbin/mdadm.static $MOUNT_IMAGE/bin/mdadm
-    cp -a /etc/mdadm.conf $MOUNT_IMAGE/etc/mdadm.conf
 fi
 
 # install init script
