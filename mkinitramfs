@@ -47,14 +47,7 @@ outp() {
 }
 
 cleantemp() {
-    rm -rf $MOUNT_IMAGE
-    rm -f /tmp/foundmodules
-    rm -f /tmp/config
-    rm -f /tmp/kernelversion
-    rm -f /tmp/ide
-    rm -f /tmp/scsi
-    rm -f /tmp/sata
-    rm -f /tmp/newata
+    rm -rf ${TEMPDIR}
 }
 
 
@@ -62,14 +55,13 @@ cleantemp() {
 ROOT_DIR=
 QUIET=0
 FOUNDMODULES=
+TEMPDIR=`mktemp -d /tmp/mkinitramfs.XXXXXX`
 
 for arg in $*; do
     if [ "$arg" == "--quiet" ]; then
         QUIET=1
     fi
 done
-
-cleantemp
 
 for option in $*; do
     case $option in
@@ -200,8 +192,10 @@ for option in $*; do
     esac
 done
 
-outp "    Making image for kernel $KERNEL_VERSION..."
+# base kernel modules dir
+KERNEL_DIR="$ROOT_DIR/lib/modules/$KERNEL_VERSION"
 
+outp "    Making image for kernel $KERNEL_VERSION..."
 outp "Setting up Parameters..."
 
 #
@@ -209,13 +203,11 @@ outp "Setting up Parameters..."
 #
 finddep () {
     for module in $MODULES; do
-        ADDMOD=`grep "/$module.ko:" $ROOT_DIR/lib/modules/$KERNEL_VERSION/modules.dep | awk -F": " '{print $2}' | sed -e "s/ /\n/g" | sed -ne "s#.*/\(.*\)\.ko.*#\1#p"`
+        ADDMOD=`grep "/$module.ko:" $KERNEL_DIR/modules.dep | awk -F": " '{print $2}' | sed -e "s/ /\n/g" | sed -ne "s#.*/\(.*\)\.ko.*#\1#p"`
         FOUNDMODULES="$FOUNDMODULES $ADDMOD $module"
     done
 }
 
-# Clean out temp files
-cleantemp
 
 #
 # Add or Remove IDE Modules
@@ -225,10 +217,10 @@ if [ "$REMOVE_IDE" == "1" ]; then
     IDE_MODULES=""
     POST_IDE=""
 else
-    if [ -d $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/ide/pci ]; then
+    if [ -d $KERNEL_DIR/kernel/drivers/ide/pci ]; then
         if [ "$HOSTCONTROLLER_IDE" == "" ]; then
-            CHECK="`ls -1 $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/ide/pci/* > /tmp/ide; \
-                sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/ide; cat /tmp/ide`"
+            CHECK="`ls -1 $KERNEL_DIR/kernel/drivers/ide/pci/* > ${TEMPDIR}/ide; \
+                sed -i -e 's|/.*/||g' -e 's/.ko//g' ${TEMPDIR}/ide; cat ${TEMPDIR}/ide`"
             for check in $CHECK; do
                 IDE_MODULE="`echo $check`"
                 IDE_MODULES="$IDE_MODULES $IDE_MODULE"
@@ -263,12 +255,12 @@ if [ "$REMOVE_SCSI" == "1" ]; then
     SCSI_MODULES=""
     POST_SCSI=""
 else
-    if [ -d $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi ]; then
+    if [ -d $KERNEL_DIR/kernel/drivers/scsi ]; then
         if [ "$HOSTCONTROLLER_SCSI" == "" ]; then
-            CHECK="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi/ -name "*.ko" ! -name "sata*" ! -name "ide-scsi*" ! -name "libata*" ! -name "*_cs*" >/tmp/scsi; \
-                find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/message/fusion/ -name "*.ko" >>/tmp/scsi ; \
-                find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/block/ -name "*.ko" ! -name "*sx8.ko" ! -name "*nbd.ko" ! -name "*pktcdvd.ko" >> /tmp/scsi ; \
-                sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/scsi; cat /tmp/scsi`"
+            CHECK="`find $KERNEL_DIR/kernel/drivers/scsi/ -name "*.ko" ! -name "sata*" ! -name "ide-scsi*" ! -name "libata*" ! -name "*_cs*" >${TEMPDIR}/scsi; \
+                find $KERNEL_DIR/kernel/drivers/message/fusion/ -name "*.ko" >>${TEMPDIR}/scsi ; \
+                find $KERNEL_DIR/kernel/drivers/block/ -name "*.ko" ! -name "*sx8.ko" ! -name "*nbd.ko" ! -name "*pktcdvd.ko" >> ${TEMPDIR}/scsi ; \
+                sed -i -e 's|/.*/||g' -e 's/.ko//g' ${TEMPDIR}/scsi; cat ${TEMPDIR}/scsi`"
             for check in $CHECK; do
                 SCSI_MODULE="`echo $check`"
                 SCSI_MODULES="$SCSI_MODULES $SCSI_MODULE"
@@ -299,17 +291,17 @@ if [ "$REMOVE_SATA" == "1" ]; then
     SATA_MODULES=""
     POST_SATA=""
 else
-    if [ -d $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi ]; then
+    if [ -d $KERNEL_DIR/kernel/drivers/scsi ]; then
         if [ "$HOSTCONTROLLER_SATA" == "" ]; then
-            CHECK="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi/ -name "sata*" ! -name "ide-scsi*" ! -name "*_cs*" >/tmp/sata; \
-                find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/block/ -name "*sx8.ko" >> /tmp/sata; \
-                find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/md/ -name "*.ko" >> /tmp/sata; \
-                sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/sata; cat /tmp/sata`"
+            CHECK="`find $KERNEL_DIR/kernel/drivers/scsi/ -name "sata*" ! -name "ide-scsi*" ! -name "*_cs*" >${TEMPDIR}/sata; \
+                find $KERNEL_DIR/kernel/drivers/block/ -name "*sx8.ko" >> ${TEMPDIR}/sata; \
+                find $KERNEL_DIR/kernel/drivers/md/ -name "*.ko" >> ${TEMPDIR}/sata; \
+                sed -i -e 's|/.*/||g' -e 's/.ko//g' ${TEMPDIR}/sata; cat ${TEMPDIR}/sata`"
             # this is just a hack for kernel version from 2.6.19, should be removed when time comes
             if [ "$KERNEL_MINOR" -gt 18 ]; then
                 echo "kernel version >= 2.6.19"
-                CHECK_NEWATA="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/ata/ -name "*.ko" >> /tmp/newata; \
-                sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/newata; cat /tmp/newata`"
+                CHECK_NEWATA="`find $KERNEL_DIR/kernel/drivers/ata/ -name "*.ko" >> ${TEMPDIR}/newata; \
+                sed -i -e 's|/.*/||g' -e 's/.ko//g' ${TEMPDIR}/newata; cat ${TEMPDIR}/newata`"
                 CHECK="$CHECK $CHECK_NEWATA"
             fi
             for check in $CHECK; do
@@ -402,7 +394,7 @@ finddep
 
 #
 # Initramfs paths
-MOUNT_IMAGE="/tmp/initrd.$$"
+MOUNT_IMAGE="${TEMPDIR}/initrd.$$"
 if [ -z $OUTPUT ]; then
     INITRD="/boot/$KERNEL_INITRD"
 else
@@ -412,10 +404,10 @@ fi
 #
 # Check for Valid Kernel
 #
-if [ -e $ROOT_DIR/lib/modules/$KERNEL_VERSION ]; then
-    outp "    $ROOT_DIR/lib/modules/$KERNEL_VERSION found"
+if [ -e $KERNEL_DIR ]; then
+    outp "    $KERNEL_DIR found"
 else
-    echo "ERROR: $ROOT_DIR/lib/modules/$KERNEL_VERSION does not exist!" >&2
+    echo "ERROR: $KERNEL_DIR does not exist!" >&2
     exit 1
 fi
 
@@ -505,10 +497,10 @@ for module in $MODULES; do
     done
 
     # Ensure both - and _ named modules are accounted again
-    modulepath="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel -name ${module}.ko`"
+    modulepath="`find $KERNEL_DIR/kernel -name ${module}.ko`"
     if [ -z "$modulepath" ]; then
         module=`echo $module|sed 's@_@-@g'`
-        modulepath="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel -name ${module}.ko`"
+        modulepath="`find $KERNEL_DIR/kernel -name ${module}.ko`"
     fi
 
     if [ "$modulepath" -a "$REMOVE_MOD" != "1" ]; then
