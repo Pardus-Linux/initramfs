@@ -14,6 +14,8 @@ NFSROOT=0
 QUIET=0
 RAID=0
 ROOT_DEVICE=""
+ROOT_LABEL=""
+FS_TYPE=""
 RESUME_DEVICE=""
 IMG_DEVICES="hd[a-z] sr[0-9]* scd[a-z]"
 MNTDIR=""
@@ -60,6 +62,10 @@ parse_cmdline() {
             ;;
             root=*)
                 ROOT_DEVICE=`echo ${x}|cut -f2 -d=`
+                if [ "${ROOT_DEVICE}" == "LABEL" ]
+                then
+                    ROOT_LABEL=`echo ${x}|cut -f3 -d=`
+                fi
             ;;
             resume=*)
                 RESUME_DEVICE=`echo ${x}|cut -f2 -d=`
@@ -255,6 +261,11 @@ else
     # mount real root
     for i in `seq 10`
     do
+        if [ "${ROOT_LABEL}" != "" ]
+        then
+            ROOT_DEVICE=`findfs LABEL=${ROOT_LABEL}`
+        fi
+
         if [ ! -b "${ROOT_DEVICE}" ]
         then
             probe_devices
@@ -267,6 +278,8 @@ else
     then
         fall2sh "Could not find boot device"
     else
+        FS_TYPE=`disktype $ROOT_DEVICE | grep KERNELMODULE | awk '{print $2}'`
+        modprobe ${FS_TYPE} 1> /dev/null 2>&1
         mount -t auto -n -o ro $ROOT_DEVICE /newroot
     fi
 fi

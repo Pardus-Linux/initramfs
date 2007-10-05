@@ -54,6 +54,7 @@ cleantemp() {
     rm -f /tmp/ide
     rm -f /tmp/scsi
     rm -f /tmp/sata
+    rm -f /tmp/newata
 }
 
 
@@ -85,6 +86,7 @@ done
 
 KERNEL_NAME="`echo $KERNEL_VERSION | sed -e s@2\.6\.*-@@g`"
 KERNEL_INITRD="initramfs-${KERNEL_VERSION}"
+KERNEL_MINOR="`echo $KERNEL_VERSION | awk -F\. '{print $3;}' | sed -e s@[.-].*@@`"
 
 if [ -z "$KERNEL_NAME" ]; then
     echo "You must specify a kernel to generate an initramfs for"
@@ -158,22 +160,28 @@ for option in $*; do
             FILESYSTEMS=
             outp "    Building full initramfs with all modules"
             ;;
+
         --dsdt=*)
             DSDT="`echo $option | awk -F= '{print $2;}'`"
             ;;
+
         -net|--net)
             ADD_NET_MODULES=1
             outp "    Adding some ethernet drivers"
             ;;
+
         --fbsplash=*)
             FBSPLASH_THEME="`echo $option | awk -F= '{print $2;}'`"
             ;;
+
         --fbsplash_resolution=*)
             FBSPLASH_RES="`echo $option | awk -F= '{print $2;}'`"
             ;;
+
         --root-dir=*)
             ROOT_DIR="`echo $option | awk -F= '{print $2;}'`"
             ;;
+
         --output=*)
             OUTPUT="`echo $option | awk -F= '{print $2;}'`"
             if [ ! -d $OUTPUT ]; then
@@ -181,6 +189,7 @@ for option in $*; do
                 exit 1
             fi
             ;;
+
         -show|--show)
             LIST_MODULES=1
             ;;
@@ -258,7 +267,7 @@ else
         if [ "$HOSTCONTROLLER_SCSI" == "" ]; then
             CHECK="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi/ -name "*.ko" ! -name "sata*" ! -name "ide-scsi*" ! -name "libata*" ! -name "*_cs*" >/tmp/scsi; \
                 find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/message/fusion/ -name "*.ko" >>/tmp/scsi ; \
-                find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/block/ -name "*.ko" ! -name "*s8x.ko" ! -name "*nbd.ko" ! -name "*pktcdvd.ko" >> /tmp/scsi ; \
+                find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/block/ -name "*.ko" ! -name "*sx8.ko" ! -name "*nbd.ko" ! -name "*pktcdvd.ko" >> /tmp/scsi ; \
                 sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/scsi; cat /tmp/scsi`"
             for check in $CHECK; do
                 SCSI_MODULE="`echo $check`"
@@ -293,9 +302,16 @@ else
     if [ -d $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi ]; then
         if [ "$HOSTCONTROLLER_SATA" == "" ]; then
             CHECK="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/scsi/ -name "sata*" ! -name "ide-scsi*" ! -name "*_cs*" >/tmp/sata; \
-                find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/block/ -name "*s8x.ko"; \
+                find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/block/ -name "*sx8.ko" >> /tmp/sata; \
                 find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/md/ -name "*.ko" >> /tmp/sata; \
                 sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/sata; cat /tmp/sata`"
+            # this is just a hack for kernel version from 2.6.19, should be removed when time comes
+            if [ "$KERNEL_MINOR" -gt 18 ]; then
+                echo "kernel version >= 2.6.19"
+                CHECK_NEWATA="`find $ROOT_DIR/lib/modules/$KERNEL_VERSION/kernel/drivers/ata/ -name "*.ko" >> /tmp/newata; \
+                sed -i -e 's|/.*/||g' -e 's/.ko//g' /tmp/newata; cat /tmp/newata`"
+                CHECK="$CHECK $CHECK_NEWATA"
+            fi
             for check in $CHECK; do
                 SATA_MODULE="`echo $check`"
                 SATA_MODULES="$SATA_MODULES $SATA_MODULE"
@@ -510,14 +526,29 @@ echo "$COPIED_MODULES" >> $MOUNT_IMAGE/modules
 # We need modmaps for coolplug autoprobe
 /sbin/depmod -ae -b $MOUNT_IMAGE -F $ROOT_DIR/boot/System.map-$KERNEL_VERSION $KERNEL_VERSION
 
-# Add fbsplash
-if [ ! -z $FBSPLASH_THEME ]; then
-    if [ ! -z $FBSPLASH_RES ]; then
-        splash_geninitramfs -v -c $MOUNT_IMAGE -r $FBSPLASH_RES $FBSPLASH_THEME
+# Check if we have fbsplash or gensplash
+if [ -f "/sbin/splash" ]; then
+    # Add fbsplash
+    if [ ! -z $FBSPLASH_THEME ]; then
+        if [ ! -z $FBSPLASH_RES ]; then
+            /sbin/splash -s -f /etc/bootsplash/themes/$FBSPLASH_THEME/config/bootsplash-1024x768.cfg > $MOUNT_IMAGE/bootsplash
+        else
+            /sbin/splash -s -f /etc/bootsplash/themes/$FBSPLASH_THEME/config/bootsplash-$FBSPLASH_RES.cfg > $MOUNT_IMAGE/bootsplash
+        fi
     else
-        splash_geninitramfs -v -c $MOUNT_IMAGE -r 1024x768 $FBSPLASH_THEME
+        # use Pardus theme with 1024x768 as a default
+        /sbin/splash -s -f /etc/bootsplash/themes/Pardus/config/bootsplash-1024x768.cfg > $MOUNT_IMAGE/bootsplash
     fi
-    # Splash_geninitramfs has poor error checking.
+else
+    # Add gensplash
+    if [ ! -z $FBSPLASH_THEME ]; then
+        if [ ! -z $FBSPLASH_RES ]; then
+            splash_geninitramfs -v -c $MOUNT_IMAGE -r $FBSPLASH_RES $FBSPLASH_THEME
+        else
+            splash_geninitramfs -v -c $MOUNT_IMAGE -r 1024x768 $FBSPLASH_THEME
+        fi
+        # Splash_geninitramfs has poor error checking.
+    fi
 fi
 
 # Custom DSDT Support
