@@ -497,10 +497,10 @@ for module in $MODULES; do
     done
 
     # Ensure both - and _ named modules are accounted again
-    modulepath="`find $KERNEL_DIR/kernel -name ${module}.ko`"
+    modulepath="`find $KERNEL_DIR -name ${module}.ko`"
     if [ -z "$modulepath" ]; then
         module=`echo $module|sed 's@_@-@g'`
-        modulepath="`find $KERNEL_DIR/kernel -name ${module}.ko`"
+        modulepath="`find $KERNEL_DIR -name ${module}.ko`"
     fi
 
     if [ "$modulepath" -a "$REMOVE_MOD" != "1" ]; then
