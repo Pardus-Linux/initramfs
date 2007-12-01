@@ -442,7 +442,7 @@ for i in `seq 0 7`; do
 done
 
 # Install busybox and init script
-cp -a /sbin/busybox $MOUNT_IMAGE/bin/busybox
+cp -a /lib/initramfs/busybox $MOUNT_IMAGE/bin/busybox
 cp -a /lib/initramfs/busybox.links $MOUNT_IMAGE/bin/busybox.links
 cp -a /usr/bin/disktype $MOUNT_IMAGE/bin/disktype
 
