@@ -29,7 +29,6 @@ usage () {
     echo "                             instead of /lib/modules"
     echo ""
     echo "    --fbsplash               add fbsplash theme into initramfs (--fbsplash=pardus)"
-    echo "    --dsdt                   add modified dsdt into initramfs (--dsdt=/boot/DSDT.aml)"
     echo "    --net                    add some of the preselected ethernet modules"
     echo "    --root-dir=DIR           look for modules in ROOT_DIR/lib/modules"
     echo "    --output=DIR             create initramfs in DIR"
@@ -78,7 +77,6 @@ done
 
 KERNEL_NAME="`echo $KERNEL_VERSION | sed -e s@2\.6\.*-@@g`"
 KERNEL_INITRD="initramfs-${KERNEL_VERSION}"
-KERNEL_MINOR="`echo $KERNEL_VERSION | awk -F\. '{print $3;}' | sed -e s@[.-].*@@`"
 
 if [ -z "$KERNEL_NAME" ]; then
     echo "You must specify a kernel to generate an initramfs for"
@@ -91,7 +89,6 @@ for option in $*; do
             REMOVE_IDE="1"
             outp "    Removing IDE Modules"
             ;;
-
         -scsi|--scsi)
             REMOVE_SCSI="1"
             outp "    Removing SCSI Modules"
@@ -153,10 +150,6 @@ for option in $*; do
             outp "    Building full initramfs with all modules"
             ;;
 
-        --dsdt=*)
-            DSDT="`echo $option | awk -F= '{print $2;}'`"
-            ;;
-
         -net|--net)
             ADD_NET_MODULES=1
             outp "    Adding some ethernet drivers"
@@ -207,7 +200,6 @@ finddep () {
         FOUNDMODULES="$FOUNDMODULES $ADDMOD $module"
     done
 }
-
 
 #
 # Add or Remove IDE Modules
@@ -294,16 +286,10 @@ else
     if [ -d $KERNEL_DIR/kernel/drivers/scsi ]; then
         if [ "$HOSTCONTROLLER_SATA" == "" ]; then
             CHECK="`find $KERNEL_DIR/kernel/drivers/scsi/ -name "sata*" ! -name "ide-scsi*" ! -name "*_cs*" >${TEMPDIR}/sata; \
+                find $KERNEL_DIR/kernel/drivers/ata/ -name "*.ko" >> ${TEMPDIR}/sata; \
                 find $KERNEL_DIR/kernel/drivers/block/ -name "*sx8.ko" >> ${TEMPDIR}/sata; \
                 find $KERNEL_DIR/kernel/drivers/md/ -name "*.ko" >> ${TEMPDIR}/sata; \
                 sed -i -e 's|/.*/||g' -e 's/.ko//g' ${TEMPDIR}/sata; cat ${TEMPDIR}/sata`"
-            # this is just a hack for kernel version from 2.6.19, should be removed when time comes
-            if [ "$KERNEL_MINOR" -gt 18 ]; then
-                echo "kernel version >= 2.6.19"
-                CHECK_NEWATA="`find $KERNEL_DIR/kernel/drivers/ata/ -name "*.ko" >> ${TEMPDIR}/newata; \
-                sed -i -e 's|/.*/||g' -e 's/.ko//g' ${TEMPDIR}/newata; cat ${TEMPDIR}/newata`"
-                CHECK="$CHECK $CHECK_NEWATA"
-            fi
             for check in $CHECK; do
                 SATA_MODULE="`echo $check`"
                 SATA_MODULES="$SATA_MODULES $SATA_MODULE"
@@ -356,7 +342,7 @@ if [ "$REMOVE_FS" == "1" ]; then
 else
     PRE_FS=""
     if  [ "$FILESYSTEMS" == "" ]; then
-        FS_MODULES="ext2 reiser4 ext3 jfs reiserfs xfs vfat fat ntfs unionfs cramfs nfs nls_utf8 nls_iso8859_9 nls_cp857 nls_iso8859-1 nls_ascii nls_cp850"
+        FS_MODULES="ext2 reiser4 ext3 jfs reiserfs xfs vfat fat ntfs unionfs cramfs nfs nls_utf8 nls_iso8859_9 nls_cp857 nls_iso8859-1 nls_ascii nls_cp850 squashfs"
     else
         FS_MODULES="$FILESYSTEMS"
     fi
@@ -446,6 +432,11 @@ cp -a /lib/initramfs/busybox $MOUNT_IMAGE/bin/busybox
 cp -a /lib/initramfs/busybox.links $MOUNT_IMAGE/bin/busybox.links
 cp -a /usr/bin/disktype $MOUNT_IMAGE/bin/disktype
 
+if [ -f "/etc/suspend.conf" ]; then
+    cp -a /etc/suspend.conf $MOUNT_IMAGE/etc/suspend.conf
+    cp -a /usr/sbin/resume $MOUNT_IMAGE/bin/resume
+fi
+
 cd $MOUNT_IMAGE/bin/
 # or static lists...
 for f in `sed 's/.*\///' $MOUNT_IMAGE/bin/busybox.links`; do
@@ -516,9 +507,8 @@ done
 echo "$COPIED_MODULES" >> $MOUNT_IMAGE/modules
 
 # We need modmaps for coolplug autoprobe
-/sbin/depmod -ae -b $MOUNT_IMAGE -F $ROOT_DIR/boot/System.map-$KERNEL_VERSION $KERNEL_VERSION
+/sbin/depmod -ae -b $MOUNT_IMAGE -F $ROOT_DIR/lib/modules/$KERNEL_VERSION/System.map $KERNEL_VERSION
 
-# Check if we have fbsplash or gensplash
 if [ -f "/sbin/splash" ]; then
     # Add fbsplash
     if [ ! -z $FBSPLASH_THEME ]; then
@@ -530,25 +520,6 @@ if [ -f "/sbin/splash" ]; then
     else
         # use Pardus theme with 1024x768 as a default
         /sbin/splash -s -f /etc/bootsplash/themes/Pardus/config/bootsplash-1024x768.cfg > $MOUNT_IMAGE/bootsplash
-    fi
-else
-    # Add gensplash
-    if [ ! -z $FBSPLASH_THEME ]; then
-        if [ ! -z $FBSPLASH_RES ]; then
-            splash_geninitramfs -v -c $MOUNT_IMAGE -r $FBSPLASH_RES $FBSPLASH_THEME
-        else
-            splash_geninitramfs -v -c $MOUNT_IMAGE -r 1024x768 $FBSPLASH_THEME
-        fi
-        # Splash_geninitramfs has poor error checking.
-    fi
-fi
-
-# Custom DSDT Support
-if [ ! -z $DSDT ]; then
-    if [ -f $DSDT ]; then
-        cp $DSDT $MOUNT_IMAGE/DSDT.aml
-    else
-        echo "ERROR: $DSDT not found..."  >&2
     fi
 fi
 

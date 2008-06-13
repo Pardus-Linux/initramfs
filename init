@@ -40,6 +40,14 @@ probe_raid() {
     /bin/mdadm -As
 }
 
+resume_from_hibernate() {
+    if [ -f "/sys/power/resume" ]
+    then
+        # char device needed by static resume binary
+        /bin/mknod /dev/snapshot c 10 231
+        /bin/resume
+    fi
+}
 
 parse_cmdline() {
     for x in `cat /proc/cmdline`; do
@@ -167,6 +175,11 @@ mount_nfs() {
 }
 
 mount_cdroot() {
+
+    # These are not loaded automatically
+    modprobe loop
+    modprobe squashfs
+
     cd /newroot
     # Loop type squashfs
     mount -t squashfs -o loop,ro /newroot/mnt/cdrom/${LOOP} /newroot/mnt/livecd
@@ -216,6 +229,9 @@ if [ "${RESUME_DEVICE}" != "" ]
 then
     # Write resume device to /sys/power/resume for SATA disks
     /bin/stat -c%t:%T $RESUME_DEVICE > /sys/power/resume
+
+    # If we suspend2disk resume it from here
+    resume_from_hibernate
 fi
 
 echo 0x0100 > /proc/sys/kernel/real-root-dev
