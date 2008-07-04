@@ -43,9 +43,12 @@ probe_raid() {
 resume_from_hibernate() {
     if [ -f "/sys/power/resume" ]
     then
-        # char device needed by static resume binary
-        /bin/mknod /dev/snapshot c 10 231
-        /bin/resume
+        if [ -f "/bin/resume" ]
+        then
+            # char device needed by static resume binary
+            /bin/mknod /dev/snapshot c 10 231
+            /bin/resume
+        fi
     fi
 }
 
