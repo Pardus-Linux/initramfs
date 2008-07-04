@@ -240,6 +240,13 @@ if [ "${CDROOT}" -eq "1" ]
 then
     ROOT_DEVICE=""
     manage_tmpfs
+
+    # modprobe filesystems that are not in kernel, for live disks
+    for i in nls_cp857 nls_utf8 vfat
+    do
+        modprobe ${i} 1> /dev/null 2>&1
+    done
+
     for i in `seq 10`
     do
         for t in ${IMG_DEVICES}
@@ -295,6 +302,14 @@ else
         fall2sh "Could not find boot device"
     else
         FS_TYPE=`disktype $ROOT_DEVICE | grep KERNELMODULE | awk '{print $2}'`
+
+        # We probably won't need this, but keeping for a while in case something pops up
+        #if [ "${FS_TYPE}" == "vfat" ]
+        #then
+        #    modprobe nls_cp857 1> /dev/null 2>&1
+        #    modprobe nls_utf8 1> /dev/null 2>&1
+        #fi
+
         modprobe ${FS_TYPE} 1> /dev/null 2>&1
         mount -t auto -n -o ro $ROOT_DEVICE /newroot
     fi
