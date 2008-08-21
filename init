@@ -245,7 +245,7 @@ then
     manage_tmpfs
 
     # modprobe filesystems that are not in kernel, for live disks
-    for i in nls_cp857 nls_utf8 vfat
+    for i in nls_cp857 nls_utf8 vfat jbd mbcache ext2 ext3
     do
         modprobe ${i} 1> /dev/null 2>&1
     done
