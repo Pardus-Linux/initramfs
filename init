@@ -213,8 +213,12 @@ mount -n -t sysfs sys /sys > /dev/null 2>&1
 
 parse_cmdline
 
-if [ "${ROOT_DEVICE}" == "shell" ]
+if [ "${ROOT_DEVICE}" == "shellnoprobe" ]
 then
+    fall2sh "Starting up a shell without probing, as commanded"
+elif [ "${ROOT_DEVICE}" == "shell" ]
+then
+    probe_devices
     fall2sh "Starting up a shell, as commanded"
 fi
 
