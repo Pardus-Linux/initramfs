@@ -6,6 +6,7 @@
 # modified by S.Çağlar Onur <caglar@uludag.org.tr> for Pardus usage
 # obscured by A.Murat Eren <meren@uludag.org.tr> so no one can easily understand
 # made smarter and removed udev dep by Onur Küçük <onur@pardus.org.tr>
+# improved bootsplash usage by Ekin Meroğlu <ekin@pardus.org.tr>
 
 #
 # Usage Menu
@@ -28,7 +29,8 @@ usage () {
     echo "    --add-module=MODULE      include MODULE"
     echo "                             instead of /lib/modules"
     echo ""
-    echo "    --fbsplash               add fbsplash theme into initramfs (--fbsplash=pardus)"
+    echo "    --fbsplash               add fbsplash theme into initramfs (--fbsplash=Pardus)"
+    echo "    --fbsplash-resolution    add splash theme in specified resolution only (--fbsplash-resolution=1024x768)"
     echo "    --net                    add some of the preselected ethernet modules"
     echo "    --root-dir=DIR           look for modules in ROOT_DIR/lib/modules"
     echo "    --output=DIR             create initramfs in DIR"
@@ -159,7 +161,7 @@ for option in $*; do
             FBSPLASH_THEME="`echo $option | awk -F= '{print $2;}'`"
             ;;
 
-        --fbsplash_resolution=*)
+        --fbsplash-resolution=*)
             FBSPLASH_RES="`echo $option | awk -F= '{print $2;}'`"
             ;;
 
@@ -510,16 +512,35 @@ echo "$COPIED_MODULES" >> $MOUNT_IMAGE/modules
 /sbin/depmod -ae -b $MOUNT_IMAGE -F $ROOT_DIR/lib/modules/$KERNEL_VERSION/System.map $KERNEL_VERSION
 
 if [ -f "/sbin/splash" ]; then
-    # Add fbsplash
-    if [ ! -z $FBSPLASH_THEME ]; then
-        if [ ! -z $FBSPLASH_RES ]; then
-            /sbin/splash -s -f /etc/bootsplash/themes/$FBSPLASH_THEME/config/bootsplash-1024x768.cfg > $MOUNT_IMAGE/bootsplash
-        else
-            /sbin/splash -s -f /etc/bootsplash/themes/$FBSPLASH_THEME/config/bootsplash-$FBSPLASH_RES.cfg > $MOUNT_IMAGE/bootsplash
+
+    # Do we have the desired theme ? If not, default to Pardus
+    if [ -n "${FBSPLASH_THEME}" ]; then
+        if [ ! -d "/etc/bootsplash/themes/$FBSPLASH_THEME/config" ]; then
+            outp "    Can not find $FBSPLASH_THEME splash theme, using Pardus theme."
+            FBSPLASH_THEME="Pardus"
         fi
     else
-        # use Pardus theme with 1024x768 as a default
-        /sbin/splash -s -f /etc/bootsplash/themes/Pardus/config/bootsplash-1024x768.cfg > $MOUNT_IMAGE/bootsplash
+        FBSPLASH_THEME="Pardus"
+    fi
+
+    # Does the theme have desired resolution ?
+    if [ -n "${FBSPLASH_RES}" ]; then
+        if [ ! -f "/etc/bootsplash/themes/$FBSPLASH_THEME/config/bootsplash-$FBSPLASH_RES.cfg" ]; then
+            outp "    Splash resolution $FBSPLASH_RES is not available, using standart resolutions."
+            unset FBSPLASH_RES
+        fi
+    fi
+
+    # List of available resolutions
+    splash_resolutions=$(ls -1 /etc/bootsplash/themes/Pardus/config/*.cfg | cut -d "/" -f 7 | cut -d "-" -f 2 | cut -d "." -f 1);
+
+    # Add fbsplash
+    if [ -n "${FBSPLASH_RES}" ]; then
+        /sbin/splash -s -f /etc/bootsplash/themes/$FBSPLASH_THEME/config/bootsplash-$FBSPLASH_RES.cfg > $MOUNT_IMAGE/bootsplash
+    else
+        for resolution in $splash_resolutions; do
+            /sbin/splash -s -f /etc/bootsplash/themes/$FBSPLASH_THEME/config/bootsplash-$resolution.cfg >> $MOUNT_IMAGE/bootsplash
+        done
     fi
 fi
 

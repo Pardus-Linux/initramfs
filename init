@@ -156,7 +156,7 @@ mount_nfs() {
     fi
 
     echo "Mounting NFS from $ROOTPATH"
-    mount -o nolock,ro $ROOTPATH /newroot/mnt/thin
+    mount -o tcp,nolock,ro $ROOTPATH /newroot/mnt/thin
 
     if [ "$?" != '0' ]
     then
