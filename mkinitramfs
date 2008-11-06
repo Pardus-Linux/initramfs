@@ -532,7 +532,7 @@ if [ -f "/sbin/splash" ]; then
     fi
 
     # List of available resolutions
-    splash_resolutions=$(ls -1 /etc/bootsplash/themes/Pardus/config/*.cfg | cut -d "/" -f 7 | cut -d "-" -f 2 | cut -d "." -f 1);
+    splash_resolutions=$(ls -1 /etc/bootsplash/themes/$FBSPLASH_THEME/config/*.cfg | cut -d "/" -f 7 | cut -d "-" -f 2 | cut -d "." -f 1);
 
     # Add fbsplash
     if [ -n "${FBSPLASH_RES}" ]; then
