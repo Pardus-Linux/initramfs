@@ -416,7 +416,8 @@ mkdir -p $MOUNT_IMAGE/lib/modules/$KERNEL_VERSION
 mknod $MOUNT_IMAGE/dev/null c 1 3
 mknod $MOUNT_IMAGE/dev/console c 5 1
 mknod $MOUNT_IMAGE/dev/tty c 5 0
-mknod $MOUNT_IMAGE/dev/tty1 c 4 0
+mknod $MOUNT_IMAGE/dev/tty0 c 4 0
+mknod $MOUNT_IMAGE/dev/tty1 c 4 1
 mknod $MOUNT_IMAGE/dev/ram0 b 1 0
 
 # urandom needed by udhcpc
