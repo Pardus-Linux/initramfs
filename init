@@ -180,7 +180,6 @@ mount_nfs() {
 mount_cdroot() {
 
     # These are not loaded automatically
-    modprobe loop
     modprobe squashfs
 
     cd /newroot

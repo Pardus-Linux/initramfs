@@ -1,0 +1,3 @@
+2008-12-30 Ekin Meroğlu <ekin@pardus.org.tr>
+		* Do not modprobe loop - since kernel release 114, it is not a module
+		anymore.
