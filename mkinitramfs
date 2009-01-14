@@ -25,6 +25,7 @@ usage () {
     echo "    --cdrom                  exclude cdrom modules"
     echo "    --fw                     exclude firewire modules"
     echo "    --fs                     exclude filesystem modules"
+    echo "    --virtio                 exclude virtio modules"
     echo "    --remove-module=MODULE   exclude MODULE"
     echo "    --add-module=MODULE      include MODULE"
     echo "                             instead of /lib/modules"
@@ -32,7 +33,6 @@ usage () {
     echo "    --fbsplash               add fbsplash theme into initramfs (--fbsplash=Pardus)"
     echo "    --fbsplash-resolution    add splash theme in specified resolution only (--fbsplash-resolution=1024x768)"
     echo "    --net                    add some of the preselected ethernet modules"
-    echo "    --virtio                 add virtio modules"
     echo "    --xen                    add Xen modules"
     echo "    --root-dir=DIR           look for modules in ROOT_DIR/lib/modules"
     echo "    --output=DIR             create initramfs in DIR"
@@ -118,6 +118,11 @@ for option in $*; do
             outp "    Removing FILESYSTEM Modules"
             ;;
 
+        -virtio|--virtio)
+            REMOVE_VIRTIO="1"
+            outp "    Removing VIRTIO Modules"
+            ;;
+
         -module=*|--remove-module=*)
              NEW_MODULE="`echo $option | awk -F= '{print $2;}'`"
             outp "    Removing Module $NEW_MODULE"
@@ -157,11 +162,6 @@ for option in $*; do
         -net|--net)
             ADD_NET_MODULES=1
             outp "    Adding some ethernet drivers"
-            ;;
-
-        -virtio|--virtio)
-            ADD_VIRTIO_MODULES=1
-            outp "    Adding virtio drivers"
             ;;
 
         -xen|--xen)
@@ -371,12 +371,12 @@ else
     NET_MODULES=""
 fi
 
-if [ "$ADD_VIRTIO_MODULES" == "1" ]; then
-    PRE_VIRTIO="virtio"
-    VIRTIO_MODULES="virtio_balloon virtio_blk virtio_net virtio_pci"
-else
+if [ "$REMOVE_VIRTIO" == "1" ]; then
     PRE_VIRTIO=""
     VIRTIO_MODULES=""
+else
+    PRE_VIRTIO="virtio"
+    VIRTIO_MODULES="virtio_balloon virtio_blk virtio_net virtio_pci"
 fi
 
 if [ "$ADD_XEN_MODULES" == "1" ]; then
