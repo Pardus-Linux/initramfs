@@ -32,6 +32,8 @@ usage () {
     echo "    --fbsplash               add fbsplash theme into initramfs (--fbsplash=Pardus)"
     echo "    --fbsplash-resolution    add splash theme in specified resolution only (--fbsplash-resolution=1024x768)"
     echo "    --net                    add some of the preselected ethernet modules"
+    echo "    --virtio                 add virtio modules"
+    echo "    --xen                    add Xen modules"
     echo "    --root-dir=DIR           look for modules in ROOT_DIR/lib/modules"
     echo "    --output=DIR             create initramfs in DIR"
     echo ""
@@ -155,6 +157,16 @@ for option in $*; do
         -net|--net)
             ADD_NET_MODULES=1
             outp "    Adding some ethernet drivers"
+            ;;
+
+        -virtio|--virtio)
+            ADD_VIRTIO_MODULES=1
+            outp "    Adding virtio drivers"
+            ;;
+
+        -xen|--xen)
+            ADD_XEN_MODULES=1
+            outp "    Adding Xen drivers"
             ;;
 
         --fbsplash=*)
@@ -359,6 +371,22 @@ else
     NET_MODULES=""
 fi
 
+if [ "$ADD_VIRTIO_MODULES" == "1" ]; then
+    PRE_VIRTIO="virtio"
+    VIRTIO_MODULES="virtio_balloon virtio_blk virtio_net virtio_pci"
+else
+    PRE_VIRTIO=""
+    VIRTIO_MODULES=""
+fi
+
+if [ "$ADD_XEN_MODULES" == "1" ]; then
+    PRE_XEN=""
+    XEN_MODULES="xenblk xenfb gntdev xennet xenkbd"
+else
+    PRE_XEN=""
+    XEN_MODULES=""
+fi
+
 #
 # Create Module Groups
 #
@@ -369,6 +397,8 @@ USB_MODULES_GROUP="$PRE_USB $USB_MODULES $POST_USB"
 FW_MODULES_GROUP="$PRE_FW $FW_MODULES $POST_FW"
 FS_MODULES_GROUP="$PRE_FS $FS_MODULES $POST_FS"
 NET_MODULES_GROUP="$PRE_NET $NET_MODULES"
+VIRTIO_MODULES_GROUP="$PRE_VIRTIO $VIRTIO_MODULES"
+XEN_MODULES_GROUP="$PRE_XEN $XEN_MODULES"
 
 #
 # List of All Needed Modules

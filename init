@@ -13,6 +13,7 @@ CDROOT=0
 NFSROOT=0
 QUIET=0
 RAID=0
+VIRTIO=0
 ROOT_DEVICE=""
 ROOT_LABEL=""
 FS_TYPE=""
@@ -38,6 +39,13 @@ probe_raid() {
     /bin/modprobe raid456
     /bin/mdadm --examine --scan > /etc/mdadm.conf
     /bin/mdadm -As
+}
+
+probe_virtio() {
+    /bin/modprobe virtio_pci
+    /bin/modprobe virtio_balloon
+    /bin/modprobe virtio_blk
+    /bin/modprobe virtio_net
 }
 
 resume_from_hibernate() {
@@ -70,6 +78,9 @@ parse_cmdline() {
             ;;
             mudur=*thin*)
                 NFSROOT=1
+            ;;
+            mudur=*virtio*)
+                VIRTIO=1
             ;;
             root=*)
                 ROOT_DEVICE=`echo ${x}|cut -f2 -d=`
@@ -229,6 +240,11 @@ probe_devices
 if [ "${RAID}" -eq "1" ]
 then
     probe_raid
+fi
+
+if [ "${VIRTIO}" -eq "1" ]
+then
+    probe_virtio
 fi
 
 if [ "${RESUME_DEVICE}" != "" ]
