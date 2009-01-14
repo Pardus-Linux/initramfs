@@ -66,21 +66,27 @@ parse_cmdline() {
             [0123456Ss])
                 LEVEL=${x}
             ;;
-            mudur=*livecd*)
-                CDROOT=1
-            ;;
-            mudur=*livedisk*)
-                CDROOT=1
-                IMG_DEVICES="hd[a-z][0-9]* sd[a-z][0-9]*"
-            ;;
-            mudur=*raid*)
-                RAID=1
-            ;;
-            mudur=*thin*)
-                NFSROOT=1
-            ;;
-            mudur=*virtio*)
-                VIRTIO=1
+            mudur=*)
+                for m in `echo ${x}|cut -f2 -d=|sed 's/,/ /g'`; do
+                    case "${m}" in
+                        livecd)
+                            CDROOT=1
+                        ;;
+                        livedisk)
+                            CDROOT=1
+                            IMG_DEVICES="hd[a-z][0-9]* sd[a-z][0-9]*"
+                        ;;
+                        raid)
+                            RAID=1
+                        ;;
+                        thin)
+                            NFSROOT=1
+                        ;;
+                        virtio)
+                            virtio=1
+                        ;;
+                    esac
+                done
             ;;
             root=*)
                 ROOT_DEVICE=`echo ${x}|cut -f2 -d=`
