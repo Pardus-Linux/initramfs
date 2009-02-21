@@ -1,3 +1,114 @@
-2008-12-30 Ekin Meroğlu <ekin@pardus.org.tr>
-		* Do not modprobe loop - since kernel release 114, it is not a module
-		anymore.
+2009-01-24 Onur Küçük <onur [at] pardus.org.tr>
+        * Fix typo in virtio to really fix bug #8064
+
+2009-01-21 Onur Küçük <onur [at] pardus.org.tr>
+        * make sure we create fb0 device node, we need it for userspace tools
+
+2009-01-14 Onur Küçük <onur [at] pardus.org.tr>
+        * Parse multiple options in mudur= parameters
+        * Enable adding of virtio and xen modules, add virtio modules by default bug #8064
+
+2008-12-30 Onur Küçük <onur [at] pardus.org.tr>
+        * fix tty nodes
+
+2008-12-30 Ekin Meroğlu <ekin [at] pardus.org.tr>
+        * Do not modprobe loop - since kernel release 114, it is not a module anymore
+
+2008-11-06 Ekin Meroğlu <ekin [at] pardus.org.tr>
+        * fix harcoded theme name...
+
+2008-11-05 Ekin Meroğlu <ekin [at] pardus.org.tr>
+        * Add all available resolutions in bootsplash themes to initramfs
+        * use tcp in NFS mount by default.
+
+2008-10-16 Onur Küçük <onur [at] pardus.org.tr>
+        * Make root=shell probe for hardware and add root=shellnoprobe support, fixes bug #8063
+
+2008-08-21 Onur Küçük <onur [at] pardus.org.tr>
+        * Add ext2/ext3 support for livedisks in initramfs
+
+2008-07-04 Onur Küçük <onur [at] pardus.org.tr>
+        * modprobe filesystems that are not in kernel, for live disks, see bug #7113
+
+2007-11-27 Onur Küçük <onur [at] pardus.org.tr>
+        * Make sure additional module dirs like extra, acerhk etc. can be added to initramfs
+
+2007-10-05 Onur Küçük <onur [at] pardus.org.tr>
+        * use KERNEL_DIR, use mktemp instead of static tempfiles, cleanup
+        * sync with pardus repo rev 33745 before "operation cleaning up crap"
+
+2007-06-22 Onur Küçük <onur [at] pardus.org.tr>
+        * add 2 more modules, thats enough
+        * create mdadm dynamically + a cosmetic
+
+2007-06-21 Onur Küçük <onur [at] pardus.org.tr>
+        * add sky2 for ethernets
+
+2007-06-15 Onur Küçük <onur [at] pardus.org.tr>
+        * use correct modules for raid and put raid modules in
+
+2007-06-14 Onur Küçük <onur [at] pardus.org.tr>
+        * add cmdline parsing for raid, move mudur=thin to sync
+        * change some ' to "
+        * removed suspend, will be added after the release
+        * Add suspend, resume, disktype, mdadm stuff from Çağlar Sans playground
+        * merge raid support from Çağlar's playground
+
+2007-06-07 Onur Küçük <onur [at] pardus.org.tr>
+        * add hostname modification from devel
+
+2007-05-30 Onur Küçük <onur [at] pardus.org.tr>
+        * trim trailing whitespace
+        * cosmetic
+
+2007-05-14 Onur Küçük <onur [at] pardus.org.tr>
+        * add e100
+
+2007-05-12 Onur Küçük <onur [at] pardus.org.tr>
+        * merge thin client support, tell me more safe drivers to add for ethernet list
+
+2007-04-18 Onur Küçük <onur [at] pardus.org.tr>
+        *  make device nodes appear on both dirs, more strict
+           this should fix bug #5225 and #5276
+
+2007-02-14 Onur Küçük <onur [at] pardus.org.tr>
+        * do not bork if no resume device is given
+        * sync with released initramfs
+
+2007-01-12 Onur Küçük <onur [at] pardus.org.tr>
+        * added vfat ntfs and unionfs to initramfs. These will have a lot of usage in livedisk (usb stick). We might even use unionfs
+
+2006-12-11 Onur Küçük <onur [at] pardus.org.tr>
+        * try to probe devices, if fails sleep 1, probe again and try again, for 5 times
+          both on harddisk boots and live boots, this hack should do for it all
+
+2006-12-06 Onur Küçük <onur [at] pardus.org.tr>
+        * modify fstab of live images from initramfs, to make sure cdrom mount stuff is in /etc/mtab
+
+2006-12-05 Onur Küçük <onur [at] pardus.org.tr>
+        * do not print all the kernel messages when we have quiet
+
+2006-11-30 Onur Küçük <onur [at] pardus.org.tr>
+        * cosmetic changes
+
+2006-10-22 Onur Küçük <onur [at] pardus.org.tr>
+        * add media for livecd + put tmpfsdirs in a variable
+
+2006-10-06 Onur Küçük <onur [at] pardus.org.tr>
+        * add livedisk support to boot from usb sticks and other possible
+          scenarios
+        * add failsafe support
+        * add support for external and scsi cdroms
+
+2006-10-05 Onur Küçük <onur [at] pardus.org.tr>
+        * 5MB gain for CD
+        * boots both on hdd and cdrom
+
+2006-09-20 Onur Küçük <onur [at] pardus.org.tr>
+        * kozmetik
+        * remove initrd and switch to initramfs
+        * code cleanup and cosmetics
+
+2006-07-04 Onur Küçük <onur [at] pardus.org.tr>
+        * initial initrd commit
+
