@@ -148,8 +148,6 @@ manage_tmpfs() {
 }
 
 run_dhcpc() {
-    # FIXME: built in kernel?
-    modprobe af_packet
     udhcpc -i eth0 -s /etc/udhcpc.script
 }
 
@@ -270,7 +268,7 @@ then
     manage_tmpfs
 
     # modprobe filesystems that are not in kernel, for live disks
-    for i in nls_cp857 nls_utf8 vfat jbd mbcache ext2 ext3
+    for i in nls_cp857 nls_utf8 vfat
     do
         modprobe ${i} 1> /dev/null 2>&1
     done
@@ -338,6 +336,7 @@ else
         #    modprobe nls_utf8 1> /dev/null 2>&1
         #fi
 
+        # No need to load ext2 ext3 ext4
         modprobe ${FS_TYPE} 1> /dev/null 2>&1
         mount -t auto -n -o ro $ROOT_DEVICE /newroot
     fi

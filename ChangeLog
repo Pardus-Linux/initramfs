@@ -1,3 +1,6 @@
+2009-03-16 Ozan Çağlayan <ozan [at] pardus.org.tr>
+		* Remove useless modprobes for 2009.
+
 2009-01-24 Onur Küçük <onur [at] pardus.org.tr>
         * Fix typo in virtio to really fix bug #8064
 
