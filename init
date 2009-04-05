@@ -14,6 +14,7 @@ NFSROOT=0
 QUIET=0
 RAID=0
 VIRTIO=0
+ROOT_FLAGS=""
 ROOT_DEVICE=""
 ROOT_LABEL=""
 FS_TYPE=""
@@ -94,6 +95,9 @@ parse_cmdline() {
                 then
                     ROOT_LABEL=`echo ${x}|cut -f3 -d=`
                 fi
+            ;;
+            rootflags=*)
+                ROOT_FLAGS="-o ${x#rootflags=}"
             ;;
             resume=*)
                 RESUME_DEVICE=`echo ${x}|cut -f2 -d=`
@@ -338,7 +342,7 @@ else
 
         # No need to load ext2 ext3 ext4
         modprobe ${FS_TYPE} 1> /dev/null 2>&1
-        mount -t auto -n -o ro $ROOT_DEVICE /newroot
+        mount -r -t auto -n ${ROOT_FLAGS} ${ROOT_DEVICE} /newroot
     fi
 fi
 

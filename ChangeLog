@@ -1,3 +1,8 @@
+2009-04-05 Ozan Çağlayan <ozan [at] pardus.org.tr>
+		* Add rootflags= support for being able to mount rootfs with a
+		different mode(e.g. data=writeback) other than the default(e.g.
+		data=ordered).
+
 2009-03-16 Ozan Çağlayan <ozan [at] pardus.org.tr>
 		* Remove useless modprobes for 2009.
 
