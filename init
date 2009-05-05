@@ -249,11 +249,12 @@ mount_cdroot() {
 
 # ----- main -------
 
-info "Started init"
 mount -n -t proc proc /proc > /dev/null 2>&1
 mount -n -t sysfs sys /sys > /dev/null 2>&1
 
 parse_cmdline
+
+info "Starting init on initramfs"
 
 if [ "${ROOT_DEVICE}" == "shellnoprobe" ]
 then
