@@ -1,3 +1,9 @@
+2009-05-05 Ozan Çağlayan <ozan [at] pardus.org.tr>
+		* Print info messages if kernel command line doesn't have quiet,
+		* Make 'quiet' actually work,
+		* Use fs type for mounting instead of auto,
+		* Call modprobe everywhere instead of using /bin/modprobe.
+
 2009-04-05 Ozan Çağlayan <ozan [at] pardus.org.tr>
 		* Add rootflags= support for being able to mount rootfs with a
 		different mode(e.g. data=writeback) other than the default(e.g.

@@ -22,6 +22,12 @@ RESUME_DEVICE=""
 IMG_DEVICES="hd[a-z] sr[0-9]* scd[a-z]"
 MNTDIR=""
 
+info() {
+    if [ "$QUIET" -eq "0" ]
+    then
+        echo "** $1"
+    fi
+}
 
 fall2sh() {
     echo "--> $*"
@@ -29,24 +35,39 @@ fall2sh() {
 }
 
 probe_devices() {
+    info "Calling coolplug to probe devices"
     /bin/coolplug 1> /dev/null 2>&1
 }
 
 probe_raid() {
-    /bin/modprobe dm-mod
-    /bin/modprobe raid0
-    /bin/modprobe raid1
-    /bin/modprobe raid10
-    /bin/modprobe raid456
+    info "Probing RAID devices"
+    modprobe dm-mod
+    modprobe raid0
+    modprobe raid1
+    modprobe raid10
+    modprobe raid456
     /bin/mdadm --examine --scan > /etc/mdadm.conf
     /bin/mdadm -As
 }
 
 probe_virtio() {
-    /bin/modprobe virtio_pci
-    /bin/modprobe virtio_balloon
-    /bin/modprobe virtio_blk
-    /bin/modprobe virtio_net
+    info "Probing Virtio devices"
+    modprobe virtio_pci
+    modprobe virtio_balloon
+    modprobe virtio_blk
+    modprobe virtio_net
+}
+
+mount_rootfs() {
+    FS_TYPE=`disktype $ROOT_DEVICE | grep KERNELMODULE | awk '{print $2}'`
+    if [ -f /lib/modules/*/$FS_TYPE.ko ]
+    then
+        info "Found module $FS_TYPE, probing it.."
+        modprobe $FS_TYPE 1> /dev/null 2>&1
+    else
+        info "Module $FS_TYPE not found, probably built-in.."
+    fi
+    mount -r -t $FS_TYPE -n ${ROOT_FLAGS} ${ROOT_DEVICE} /newroot
 }
 
 resume_from_hibernate() {
@@ -54,6 +75,7 @@ resume_from_hibernate() {
     then
         if [ -f "/bin/resume" ]
         then
+            info "Resuming from hibernation"
             # char device needed by static resume binary
             /bin/mknod /dev/snapshot c 10 231
             /bin/resume
@@ -226,6 +248,8 @@ mount_cdroot() {
 }
 
 # ----- main -------
+
+info "Started init"
 mount -n -t proc proc /proc > /dev/null 2>&1
 mount -n -t sysfs sys /sys > /dev/null 2>&1
 
@@ -241,7 +265,10 @@ then
 fi
 
 # Minimizing kernel noise
-[ -n "$QUIET" ] && echo "1" > /proc/sys/kernel/printk
+if [ "$QUIET" -eq "1" ]
+then
+    echo "1" > /proc/sys/kernel/printk
+fi
 
 probe_devices
 
@@ -312,6 +339,7 @@ then
     hostname $HOSTNAME
 else
     # mount real root
+    info "Mounting real root"
     for i in `seq 10`
     do
         if [ "${ROOT_LABEL}" != "" ]
@@ -331,18 +359,7 @@ else
     then
         fall2sh "Could not find boot device"
     else
-        FS_TYPE=`disktype $ROOT_DEVICE | grep KERNELMODULE | awk '{print $2}'`
-
-        # We probably won't need this, but keeping for a while in case something pops up
-        #if [ "${FS_TYPE}" == "vfat" ]
-        #then
-        #    modprobe nls_cp857 1> /dev/null 2>&1
-        #    modprobe nls_utf8 1> /dev/null 2>&1
-        #fi
-
-        # No need to load ext2 ext3 ext4
-        modprobe ${FS_TYPE} 1> /dev/null 2>&1
-        mount -r -t auto -n ${ROOT_FLAGS} ${ROOT_DEVICE} /newroot
+        mount_rootfs
     fi
 fi
 
@@ -352,5 +369,6 @@ umount -n /proc
 [ "${INIT}" == "" ] && INIT="/sbin/init";
 
 # and we start
+info "Switching to real root"
 exec /bin/switch_root -c /dev/console /newroot ${INIT} ${LEVEL}
 
