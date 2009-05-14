@@ -174,7 +174,7 @@ manage_tmpfs() {
 }
 
 run_dhcpc() {
-    udhcpc -i eth0 -s /etc/udhcpc.script
+    udhcpc -C -i eth0 -s /etc/udhcpc.script
 }
 
 mount_nfs() {

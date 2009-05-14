@@ -1,3 +1,6 @@
+2009-05-14 Taner Taş <taner [at] pardus.org.tr>
+		* Fix dhcp client ID problem
+
 2009-05-05 Ozan Çağlayan <ozan [at] pardus.org.tr>
 		* Print info messages if kernel command line doesn't have quiet,
 		* Make 'quiet' actually work,
