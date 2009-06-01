@@ -345,7 +345,8 @@ else
     do
         if [ "${ROOT_LABEL}" != "" ]
         then
-            ROOT_DEVICE=`findfs LABEL=${ROOT_LABEL}`
+            #FIXME: Remove --no-floppy when the problem is fixed in busybox upstream
+            ROOT_DEVICE=`findfs LABEL=${ROOT_LABEL} --no-floppy`
         fi
 
         if [ ! -b "${ROOT_DEVICE}" ]
