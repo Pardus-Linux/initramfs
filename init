@@ -8,18 +8,21 @@ PATH=/usr/sbin:/usr/bin:/sbin:/bin
 ROOT_LINKS="bin sbin lib boot usr opt"
 ROOT_TREES="etc root home var"
 TMPFS_DIRS="dev mnt mnt/cdrom mnt/livecd mnt/thin tmp sys proc media"
+IMG_DEVICES="hd[a-z] sr[0-9]* scd[a-z]"
 LOOP="pardus.img"
+
+NORESUME=0
 CDROOT=0
 NFSROOT=0
 QUIET=0
 RAID=0
 VIRTIO=0
-ROOT_FLAGS=""
-ROOT_DEVICE=""
-ROOT_LABEL=""
+
 FS_TYPE=""
+ROOT_FLAGS=""
+ROOT_LABEL=""
+ROOT_DEVICE=""
 RESUME_DEVICE=""
-IMG_DEVICES="hd[a-z] sr[0-9]* scd[a-z]"
 MNTDIR=""
 
 info() {
@@ -122,13 +125,16 @@ parse_cmdline() {
                 ROOT_FLAGS="-o ${x#rootflags=}"
             ;;
             resume=*)
-                RESUME_DEVICE=`echo ${x}|cut -f2 -d=`
+                RESUME_DEVICE="${x#resume=}"
             ;;
             init=*)
-                INIT=`echo ${x}|cut -f2 -d=`
+                INIT="${x#init=}"
             ;;
             quiet)
                 QUIET=1
+            ;;
+            noresume)
+                NORESUME=1
             ;;
         esac
     done
