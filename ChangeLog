@@ -1,3 +1,6 @@
+2009-06-04 Onur Küçük <onur [at] pardus.org.tr>
+		* Add UUID support
+
 2009-06-02 Ozan Çağlayan <ozan [at] pardus.org.tr>
 		* Parse noresume from /proc/cmdline,
 		* Simplify the parsing of other command line parameters by eliminating

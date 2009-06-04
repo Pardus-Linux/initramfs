@@ -21,6 +21,7 @@ VIRTIO=0
 FS_TYPE=""
 ROOT_FLAGS=""
 ROOT_LABEL=""
+ROOT_UUID=""
 ROOT_DEVICE=""
 RESUME_DEVICE=""
 MNTDIR=""
@@ -119,6 +120,10 @@ parse_cmdline() {
                 if [ "${ROOT_DEVICE}" == "LABEL" ]
                 then
                     ROOT_LABEL=`echo ${x}|cut -f3 -d=`
+                fi
+                if [ "${ROOT_DEVICE}" == "UUID" ]
+                then
+                    ROOT_UUID=`echo ${x}|cut -f3 -d=`
                 fi
             ;;
             rootflags=*)
@@ -353,6 +358,12 @@ else
         then
             #FIXME: Remove --no-floppy when the problem is fixed in busybox upstream
             ROOT_DEVICE=`findfs LABEL=${ROOT_LABEL} --no-floppy`
+        fi
+
+        if [ "${ROOT_UUID}" != "" ]
+        then
+            #FIXME: Remove --no-floppy when the problem is fixed in busybox upstream
+            ROOT_DEVICE=`findfs UUID=${ROOT_UUID} --no-floppy`
         fi
 
         if [ ! -b "${ROOT_DEVICE}" ]
