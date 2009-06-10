@@ -29,7 +29,7 @@ MNTDIR=""
 info() {
     if [ "$QUIET" -eq "0" ]
     then
-        echo "** $1"
+        echo "$1"
     fi
 }
 
