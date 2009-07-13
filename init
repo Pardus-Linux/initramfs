@@ -29,7 +29,7 @@ MNTDIR=""
 info() {
     if [ "$QUIET" -eq "0" ]
     then
-        echo "$1"
+        echo "[  $(cat /proc/uptime 2>/dev/null | cut -f1 -d' ')0000] initramfs: $1"
     fi
 }
 
@@ -316,7 +316,7 @@ then
         modprobe ${i} 1> /dev/null 2>&1
     done
 
-    for i in `seq 10`
+    for i in `seq 50`
     do
         for t in ${IMG_DEVICES}
         do
@@ -331,7 +331,7 @@ then
             break
         else
             probe_devices
-            sleep 1
+            usleep 200000
         fi
     done
 
@@ -352,7 +352,7 @@ then
 else
     # mount real root
     info "Mounting real root"
-    for i in `seq 10`
+    for i in `seq 50`
     do
         if [ "${ROOT_LABEL}" != "" ]
         then
@@ -369,7 +369,7 @@ else
         if [ ! -b "${ROOT_DEVICE}" ]
         then
             probe_devices
-            sleep 1
+            usleep 200000
         else
             break
         fi
@@ -382,12 +382,12 @@ else
     fi
 fi
 
+info "Preparing to switch to the real root"
 umount -n /sys
 umount -n /proc
 
 [ "${INIT}" == "" ] && INIT="/sbin/init";
 
 # and we start
-info "Switching to real root"
 exec /bin/switch_root -c /dev/console /newroot ${INIT} ${LEVEL}
 
