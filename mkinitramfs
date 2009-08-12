@@ -167,6 +167,8 @@ class KernelModule:
         self.kernelVersion = config.kernelVersion
         self.targetDir = config.tmpDir
         self.modulesDir = "/lib/modules/%s" % self.kernelVersion
+        self.addNetworkModule = config.networkModule
+        self.addNetworkModuleBasic = config.networkModuleBasic
         self.findAllModules()
 
         self.scsiDirs = ["kernel/drivers/scsi"]
@@ -183,7 +185,9 @@ class KernelModule:
         self.usbModules = ["usb-storage", "sd_mod", "usbcore", "ehci-hcd", "ohci-hcd", "uhci-hcd"]
 
         self.filesystemModules = ["ext2", "ext3", "ext4", "reiser4", "jfs", "reiserfs", "xfs", "vfat", "fat", "ntfs", "unionfs", "cramfs", "nfs", "nls_utf8", "nls_iso8859_9", "nls_cp857", "nls_iso8859-1", "nls_ascii", "nls_cp850", "squashfs"]
-        self.netBaseModules = ["af_packet", "mii", "8390", "via-rhine", "8139too", "ne2k-pci", "e100", "sky2", "tg3", "skge"]
+
+        self.networkBaseModules = ["af_packet", "mii", "8390", "via-rhine", "8139too", "ne2k-pci", "e100", "sky2", "tg3", "skge"]
+        self.networkDirs = ["kernel/drivers/net"]
 
         self.virtioModules = ["virtio", "virtio_balloon", "virtio_blk", "virtio_net", "virtio_pci"]
         self.xenModules = ["xenblk", "xenfb", "gntdev", "xennet", "xenkbd"]
@@ -267,6 +271,15 @@ class KernelModule:
         for i in self.ideDirs:
             self.addDir(i)
 
+    def addNetwork(self):
+        if self.addNetworkModule:
+            for i in self.networkDirs:
+                self.addDir(i)
+
+        if self.addNetworkModuleBasic:
+            for i in self.networkModuleBasic:
+                self.addModule(i)
+
     def addMd(self):
         for i in self.mdDirs:
             self.addDir(i)
@@ -301,6 +314,7 @@ class KernelModule:
         self.addMmc()
         self.addBlock()
         self.addIde()
+        self.addNetwork()
         self.addMd()
         self.addFirewire()
         self.addI2o()
@@ -415,6 +429,10 @@ if __name__ == "__main__":
             help="use FILE for initramfs file name")
     parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False,
             help="print extra debug info")
+    parser.add_option("--network", action="store_true", dest="networkModule", default=False,
+            help="add network modules")
+    parser.add_option("--network-generic", action="store_true", dest="networkModuleBasic", default=False,
+            help="add only generic network modules")
     #parser.add_option("-n", "--dry-run", action="store_true", dest="dryrun", default=False,
     #        help="do not perform any action, just show what will be done")
     #parser.add_option("--list-modules", action="store_true", dest="listModules", default=False,
@@ -426,6 +444,8 @@ if __name__ == "__main__":
 
     config.destDir = os.path.abspath(opts.destdir)
     config.debug = opts.debug
+    config.networkModule = opts.networkModule
+    config.networkModuleBasic = opts.networkModuleBasic
     #config.dryrun = opts.dryrun
     config.kernelType = opts.type
 
