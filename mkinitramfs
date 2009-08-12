@@ -71,6 +71,10 @@ def run(*cmd):
     f = file("/dev/null", "w")
     return subprocess.call(cmd, shell=True, stdout=f, stderr=f)
 
+def printFail(msg):
+    print msg
+    tempdir.cleanup()
+    sys.exit(1)
 
 class BaseSystem:
     def __init__(self):
@@ -166,7 +170,8 @@ class KernelModule:
         self.blackList = ["pktcdvd"]
         self.kernelVersion = config.kernelVersion
         self.targetDir = config.tmpDir
-        self.modulesDir = "/lib/modules/%s" % self.kernelVersion
+        self.rootDir = config.rootDir
+        self.modulesDir = os.path.join(self.rootDir, "lib/modules/%s" % self.kernelVersion)
         self.addNetworkModule = config.networkModule
         self.addNetworkModuleBasic = config.networkModuleBasic
         self.findAllModules()
@@ -204,10 +209,13 @@ class KernelModule:
 
     def installModules(self):
         for i in self.modulesList:
-            copy(i, os.path.join(self.targetDir, self.modulesDir.lstrip("/")))
+            copy(i, os.path.join(self.targetDir, self.modulesDir.replace(self.rootDir, "/").lstrip("/")))
 
     def findAllModules(self):
         foundModules = []
+
+        if not os.path.exists(self.modulesDir):
+            printFail("There is no %s, please check your kernel version" % self.modulesDir)
 
         for root, directory, files in os.walk(self.modulesDir):
             for name in files:
@@ -423,8 +431,10 @@ if __name__ == "__main__":
             help="kernel version to create initramfs for")
     parser.add_option("-t", "--type", dest="type", type="string", default="kernel",
             help="kernel type to create initramfs for")
-    parser.add_option("-o", "--output", dest="destdir", type="string", metavar="DIR", default="/boot",
+    parser.add_option("-o", "--output", dest="destDir", type="string", metavar="DIR", default="/boot",
             help="create initramfs in DIR")
+    parser.add_option("-r", "--rootdir", dest="rootDir", type="string", metavar="DIR", default="/",
+            help="use DIR as basedir for kernel modules")
     parser.add_option("-f", "--filename", dest="filename", type="string", metavar="FILE",
             help="use FILE for initramfs file name")
     parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False,
@@ -442,12 +452,15 @@ if __name__ == "__main__":
 
     (opts, args) = parser.parse_args()
 
-    config.destDir = os.path.abspath(opts.destdir)
+    config.destDir = os.path.abspath(opts.destDir)
+    config.rootDir = os.path.abspath(opts.rootDir)
+
     config.debug = opts.debug
-    config.networkModule = opts.networkModule
-    config.networkModuleBasic = opts.networkModuleBasic
     #config.dryrun = opts.dryrun
     config.kernelType = opts.type
+
+    config.networkModule = opts.networkModule
+    config.networkModuleBasic = opts.networkModuleBasic
 
     if opts.kernelVersion:
         config.kernelVersion = opts.kernelVersion
