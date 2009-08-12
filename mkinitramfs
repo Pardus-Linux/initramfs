@@ -277,7 +277,7 @@ class KernelModule:
                 self.addDir(i)
 
         if self.addNetworkModuleBasic:
-            for i in self.networkModuleBasic:
+            for i in self.networkBaseModules:
                 self.addModule(i)
 
     def addMd(self):
