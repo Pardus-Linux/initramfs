@@ -2,13 +2,7 @@
 Todo
 ---------
 
-- commandline support
 - config file support
-- allow setting of
-    kernel type
-    kernel version
-    destdir
-
 - dry-run
 - debug
 
