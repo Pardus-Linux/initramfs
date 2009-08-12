@@ -415,18 +415,18 @@ if __name__ == "__main__":
             help="use FILE for initramfs file name")
     parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False,
             help="print extra debug info")
-    parser.add_option("-n", "--dry-run", action="store_true", dest="dryrun", default=False,
-            help="do not perform any action, just show what will be done")
-    parser.add_option("--list-modules", action="store_true", dest="listModules", default=False,
-            help="do not perform any action, just show what will be done")
-    parser.add_option("--list-base", action="store_true", dest="listBase", default=False,
-            help="do not perform any action, just show what will be done")
+    #parser.add_option("-n", "--dry-run", action="store_true", dest="dryrun", default=False,
+    #        help="do not perform any action, just show what will be done")
+    #parser.add_option("--list-modules", action="store_true", dest="listModules", default=False,
+    #        help="do not perform any action, just show what will be done")
+    #parser.add_option("--list-base", action="store_true", dest="listBase", default=False,
+    #        help="do not perform any action, just show what will be done")
 
     (opts, args) = parser.parse_args()
 
     config.destDir = os.path.abspath(opts.destdir)
     config.debug = opts.debug
-    config.dryrun = opts.dryrun
+    #config.dryrun = opts.dryrun
     config.kernelType = opts.type
 
     if opts.kernelVersion:
