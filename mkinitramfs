@@ -247,17 +247,22 @@ class KernelModule:
         ret = capture("modinfo -F firmware %s/*.ko" % os.path.join(self.targetDir, self.modulesDir.replace(self.rootDir, "/").lstrip("/")))[0]
         fwlist = ret.strip("\n").split("\n")
 
-        targetbase = self.firmwareDir.replace(self.rootDir, self.targetDir)
+        targetbase = os.path.join(self.targetDir, "lib/firmware")
 
         for i in fwlist:
             src = os.path.join(self.firmwareDir, i)
             target = os.path.join(targetbase, os.path.dirname(i))
 
             if os.path.exists(src):
-                mkdir(target)
+                if not os.path.exists(target):
+                    mkdir(target)
+
                 copy(src, target)
+
             else:
-                printWarn("Could not find firmware %s" % src)
+                # FIXME: we miss lots of firmware !
+                # printWarn("Could not find firmware %s" % src)
+                pass
 
     def addDir(self, mdir):
         newModules = []
@@ -411,12 +416,16 @@ class Initramfs:
 class Tempdir:
     def __init__(self):
         self.tmpDir = ""
+        self.keepTmp = False
 
     def create(self):
         self.tmpDir = tempfile.mkdtemp(prefix="mkinitramfs-")
 
     def cleanup(self):
-        shutil.rmtree(self.tmpDir)
+        if self.keepTmp:
+            printWarn("keeping tempdir %s" % self.tmpDir)
+        else:
+            shutil.rmtree(self.tmpDir)
 
 class Config:
     def __init__(self):
@@ -467,6 +476,8 @@ if __name__ == "__main__":
             help="add network modules")
     parser.add_option("--network-generic", action="store_true", dest="networkModuleBasic", default=False,
             help="add only generic network modules")
+    parser.add_option("--keeptmp", action="store_true", dest="keepTmp", default=False,
+            help="wheter to keep temporary dir after operation")
     #parser.add_option("-n", "--dry-run", action="store_true", dest="dryrun", default=False,
     #        help="do not perform any action, just show what will be done")
     #parser.add_option("--list-modules", action="store_true", dest="listModules", default=False,
@@ -481,8 +492,9 @@ if __name__ == "__main__":
 
     config.debug = opts.debug
     #config.dryrun = opts.dryrun
-    config.kernelType = opts.type
+    tempdir.keepTmp = opts.keepTmp
 
+    config.kernelType = opts.type
     config.networkModule = opts.networkModule
     config.networkModuleBasic = opts.networkModuleBasic
 
