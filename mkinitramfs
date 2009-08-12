@@ -76,6 +76,9 @@ def printFail(msg):
     tempdir.cleanup()
     sys.exit(1)
 
+def printWarn(msg):
+    print msg
+
 class BaseSystem:
     def __init__(self):
         self.kver = config.kernelVersion
@@ -114,6 +117,7 @@ class BaseSystem:
             mkdir(self.getNewRoot(i))
 
         mkdir(self.getNewRoot("/lib/modules/%s" % self.kver))
+        mkdir(self.getNewRoot("/lib/firmware"))
 
     def copyBasefiles(self):
         for i in self.baseFileList:
@@ -169,9 +173,12 @@ class KernelModule:
         self.allModules = []
         self.blackList = ["pktcdvd"]
         self.kernelVersion = config.kernelVersion
+
         self.targetDir = config.tmpDir
         self.rootDir = config.rootDir
         self.modulesDir = os.path.join(self.rootDir, "lib/modules/%s" % self.kernelVersion)
+        self.firmwareDir = os.path.join(self.rootDir, "lib/firmware")
+
         self.addNetworkModule = config.networkModule
         self.addNetworkModuleBasic = config.networkModuleBasic
         self.findAllModules()
@@ -235,6 +242,22 @@ class KernelModule:
 
         # return [os.path.join(self.modulesDir, x) for x in deps if not x == ""]
         self.modulesList.extend([os.path.join(self.modulesDir, x) for x in deps if not x == ""])
+
+    def appendFirmwares(self):
+        ret = capture("modinfo -F firmware %s/*.ko" % os.path.join(self.targetDir, self.modulesDir.replace(self.rootDir, "/").lstrip("/")))[0]
+        fwlist = ret.strip("\n").split("\n")
+
+        targetbase = self.firmwareDir.replace(self.rootDir, self.targetDir)
+
+        for i in fwlist:
+            src = os.path.join(self.firmwareDir, i)
+            target = os.path.join(targetbase, os.path.dirname(i))
+
+            if os.path.exists(src):
+                mkdir(target)
+                copy(src, target)
+            else:
+                printWarn("Could not find firmware %s" % src)
 
     def addDir(self, mdir):
         newModules = []
@@ -335,6 +358,7 @@ class KernelModule:
         self.findModuleDeps()
         self.tidyModuleList()
         self.installModules()
+        self.appendFirmwares()
         self.depmod()
 
 class Splash:
