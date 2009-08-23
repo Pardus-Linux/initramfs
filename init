@@ -50,8 +50,8 @@ probe_raid() {
     modprobe raid1
     modprobe raid10
     modprobe raid456
-    /bin/mdadm --examine --scan > /etc/mdadm.conf
-    /bin/mdadm -As
+    /sbin/mdadm --examine --scan > /etc/mdadm.conf
+    /sbin/mdadm -As
 }
 
 probe_virtio() {

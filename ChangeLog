@@ -1,3 +1,12 @@
+2009-08-23 Onur Küçük <onur [at] pardus.org.tr>
+		* Fix mdadm runner to search for it in /sbin, thanks to Taner
+
+2009-08-12 Onur Küçük <onur [at] pardus.org.tr>
+		* Add --keeptmp option to keep temporary folder for debug
+		* Add firmware files for necessary modules
+		* rootdir support
+		* network support --network adds all network modules (about 4.4 MB growth), --network-generic adds some basic modules
+
 2009-07-08 Onur Küçük <onur [at] pardus.org.tr>
 		* Port mkinitramfs to python
 
