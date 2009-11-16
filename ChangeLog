@@ -1,3 +1,6 @@
+2009-11-16 Ozan Çağlayan <ozan [at] pardus.org.tr>
+		* Use full path for modinfo.
+
 2009-08-23 Onur Küçük <onur [at] pardus.org.tr>
 		* Fix mdadm runner to search for it in /sbin, thanks to Taner
 
