@@ -253,6 +253,9 @@ mount_cdroot() {
     chmod 1777 tmp
     (cd /newroot/${FS_LOCATION}; cp -a ${ROOT_TREES} /newroot)
 
+    # for userspace
+    touch /newroot/var/run/pardus/livemedia
+
     # this is needed for yali
     MNTDIR=`grep \/mnt\/cdrom\  /proc/mounts|sed 's/\/newroot//g'`
     echo "$MNTDIR" >> /newroot/etc/fstab
