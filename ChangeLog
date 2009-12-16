@@ -1,3 +1,7 @@
+2009-12-16 Ozan Çağlayan <ozan [at] pardus.org.tr>
+		* Add --drm for adding KMS capable DRM drivers into the initramfs. The
+		logic is stolen from dracut.
+
 2009-11-16 Ozan Çağlayan <ozan [at] pardus.org.tr>
 		* Use full path for modinfo.
 
