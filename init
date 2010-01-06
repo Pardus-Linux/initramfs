@@ -5,14 +5,15 @@
 #
 
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
+INITRAMFSCONF="/etc/initramfs.conf"
+
 ROOT_LINKS="bin sbin lib boot usr opt"
 ROOT_TREES="etc root home var"
 TMPFS_DIRS="dev mnt mnt/cdrom mnt/livecd mnt/thin tmp sys proc media"
-IMG_DEVICES="hd[a-z] sr[0-9]* scd[a-z]"
-LOOP="pardus.img"
+LOOPBACKFILE="pardus.img"
 
 NORESUME=0
-CDROOT=0
+LIVE=0
 NFSROOT=0
 QUIET=0
 RAID=0
@@ -20,9 +21,8 @@ VIRTIO=0
 
 FS_TYPE=""
 ROOT_FLAGS=""
-ROOT_LABEL=""
-ROOT_UUID=""
 ROOT_DEVICE=""
+ROOT_TARGET=""
 RESUME_DEVICE=""
 MNTDIR=""
 
@@ -87,6 +87,44 @@ resume_from_hibernate() {
     fi
 }
 
+# FIXME: maybe we should just source the file instead of parsing
+#        also consider merging conf parser and cmdline parser
+parse_config() {
+    while read inputline;
+    do
+        case "${inputline}" in
+            raid=*)
+                RAID=$(echo $inputline|cut -f2- -d=)
+            ;;
+            thin=*)
+                NFSROOT=$(echo $inputline|cut -f2- -d=)
+            ;;
+            virtio=*)
+                VIRTIO=$(echo $inputline|cut -f2- -d=)
+            ;;
+            root=*)
+                ROOT_TARGET=$(echo $inputline|cut -f2- -d=)
+            ;;
+            rootflags=*)
+                ROOT_FLAGS=$(echo $inputline|cut -f2- -d=)
+            ;;
+            liveroot=*)
+                LIVE=1
+                LIVEROOT=$(echo $inputline|cut -f2- -d=)
+            ;;
+            resume=*)
+                RESUME_DEVICE="${x#resume=}"
+            ;;
+            noresume=*)
+                NORESUME=$(echo $inputline|cut -f2- -d=)
+            ;;
+            init=*)
+                INIT="${x#INIT=}"
+            ;;
+        esac
+    done < $INITRAMFSCONF
+}
+
 parse_cmdline() {
     for x in `cat /proc/cmdline`; do
         case "${x}" in
@@ -97,11 +135,10 @@ parse_cmdline() {
                 for m in `echo ${x}|cut -f2 -d=|sed 's/,/ /g'`; do
                     case "${m}" in
                         livecd)
-                            CDROOT=1
+                            LIVE=1
                         ;;
                         livedisk)
-                            CDROOT=1
-                            IMG_DEVICES="hd[a-z][0-9]* sd[a-z][0-9]*"
+                            LIVE=1
                         ;;
                         raid)
                             RAID=1
@@ -116,21 +153,20 @@ parse_cmdline() {
                 done
             ;;
             root=*)
-                ROOT_DEVICE=`echo ${x}|cut -f2 -d=`
-                if [ "${ROOT_DEVICE}" == "LABEL" ]
-                then
-                    ROOT_LABEL=`echo ${x}|cut -f3 -d=`
-                fi
-                if [ "${ROOT_DEVICE}" == "UUID" ]
-                then
-                    ROOT_UUID=`echo ${x}|cut -f3 -d=`
-                fi
+                ROOT_TARGET=`echo ${x}|cut -f2- -d=`
             ;;
             rootflags=*)
                 ROOT_FLAGS="-o ${x#rootflags=}"
             ;;
+            liveroot=*)
+                LIVE=1
+                LIVEROOT=$(echo $inputline|cut -f2- -d=)
+            ;;
             resume=*)
                 RESUME_DEVICE="${x#resume=}"
+            ;;
+            noresume)
+                NORESUME=1
             ;;
             init=*)
                 INIT="${x#init=}"
@@ -138,14 +174,11 @@ parse_cmdline() {
             quiet)
                 QUIET=1
             ;;
-            noresume)
-                NORESUME=1
-            ;;
         esac
     done
 }
 
-findcdmount() {
+find_live_mount() {
     if [ "$#" -gt "0" ]
     then
         for x in $*
@@ -155,7 +188,7 @@ findcdmount() {
             if [ "$?" = "0" ]
             then
                 # Check for cdroot image
-                if [ -e /newroot/mnt/cdrom/${LOOP} ]
+                if [ -e /newroot/mnt/cdrom/${LOOPBACKFILE} ]
                 then
                     ROOT_DEVICE="${x}"
                     break
@@ -236,7 +269,7 @@ mount_cdroot() {
 
     cd /newroot
     # Loop type squashfs
-    mount -t squashfs -o loop,ro /newroot/mnt/cdrom/${LOOP} /newroot/mnt/livecd
+    mount -t squashfs -o loop,ro /newroot/mnt/cdrom/${LOOPBACKFILE} /newroot/mnt/livecd
 
     if [ "$?" != "0" ]
     then
@@ -253,8 +286,12 @@ mount_cdroot() {
     chmod 1777 tmp
     (cd /newroot/${FS_LOCATION}; cp -a ${ROOT_TREES} /newroot)
 
-    # for userspace
-    touch /newroot/var/run/pardus/livemedia
+    # FIXME: the device list is taken from udev, we can't rely on sys entries since pluggable means different
+    #        in kernel world. Suggestions that do not include this kind of regexp mania are welcome
+
+    # for userspace applications
+    REAL_ROOT_TYPE=`echo "${REAL_ROOT}" | sed -e 's/^\/dev\///' | grep -qE '^sr[0-9]*|^hd[a-z]|^pcd[0-9]|^xvd*' && echo "optical" || echo "harddisk"`
+    echo "${REAL_ROOT_TYPE}" > /newroot/var/run/pardus/livemedia
 
     # this is needed for yali
     MNTDIR=`grep \/mnt\/cdrom\  /proc/mounts|sed 's/\/newroot//g'`
@@ -266,14 +303,21 @@ mount_cdroot() {
 mount -n -t proc proc /proc > /dev/null 2>&1
 mount -n -t sysfs sys /sys > /dev/null 2>&1
 
+
+# first parse config file, then cmdline to allow overwriting internal config
+if [ -f "$INITRAMFSCONF" ]
+then
+    parse_config
+fi
+
 parse_cmdline
 
 info "Starting init on initramfs"
 
-if [ "${ROOT_DEVICE}" == "shellnoprobe" ]
+if [ "${ROOT_TARGET}" == "shellnoprobe" ]
 then
     fall2sh "Starting up a shell without probing, as commanded"
-elif [ "${ROOT_DEVICE}" == "shell" ]
+elif [ "${ROOT_TARGET}" == "shell" ]
 then
     probe_devices
     fall2sh "Starting up a shell, as commanded"
@@ -308,7 +352,7 @@ fi
 
 echo 0x0100 > /proc/sys/kernel/real-root-dev
 
-if [ "${CDROOT}" -eq "1" ]
+if [ "${LIVE}" -eq "1" ]
 then
     ROOT_DEVICE=""
     manage_tmpfs
@@ -321,14 +365,9 @@ then
 
     for i in `seq 50`
     do
-        for t in ${IMG_DEVICES}
-        do
-            findcdmount "/newroot/dev/$t"
-            if [ "${ROOT_DEVICE}" != "" ]
-            then
-                break
-            fi
-        done
+        t=`findfs ${LIVEROOT} --no-floppy 2>/dev/null`
+        find_live_mount "/newroot$t"
+
         if [ "${ROOT_DEVICE}" != "" ]
         then
             break
@@ -357,17 +396,8 @@ else
     info "Mounting real root"
     for i in `seq 50`
     do
-        if [ "${ROOT_LABEL}" != "" ]
-        then
-            #FIXME: Remove --no-floppy when the problem is fixed in busybox upstream
-            ROOT_DEVICE=`findfs LABEL=${ROOT_LABEL} --no-floppy`
-        fi
-
-        if [ "${ROOT_UUID}" != "" ]
-        then
-            #FIXME: Remove --no-floppy when the problem is fixed in busybox upstream
-            ROOT_DEVICE=`findfs UUID=${ROOT_UUID} --no-floppy`
-        fi
+        # let findfs handle all conversion
+        ROOT_DEVICE=`findfs ${ROOT_TARGET} --no-floppy 2>/dev/null`
 
         if [ ! -b "${ROOT_DEVICE}" ]
         then

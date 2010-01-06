@@ -1,3 +1,9 @@
+2010-01-04 Onur Küçük <onur [at] pardus.org.tr>
+		* Sanitize some variable names
+		* Add /etc/initramfs/initramfs.conf parser
+		* Fix ROOT device UUID / LABEL parsing logic
+		* 
+
 2009-12-16 Ozan Çağlayan <ozan [at] pardus.org.tr>
 		* Add --drm for adding KMS capable DRM drivers into the initramfs. The
 		logic is stolen from dracut.

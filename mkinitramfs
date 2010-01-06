@@ -15,6 +15,16 @@ import subprocess
 
 from optparse import OptionParser
 
+config = {"rootDir": "/",
+          "initramfsConf": "/etc/initramfs.conf",
+          "kernelType": "kernel",
+          "kernelVersion": "",
+          "tmpDir": "",
+          "destDir": "/boot",
+          "debug": False,
+          "dryrun": False
+}
+
 
 def loadFile(_file):
     try:
@@ -79,11 +89,24 @@ def printFail(msg):
 def printWarn(msg):
     print msg
 
+def setKernelVersion(Version=""):
+    if Version == "":
+        kver = "".join(loadFile("/etc/kernel/%s" % config["kernelType"]))
+    else:
+        kver = Version
+
+    # FIXME: we should do this an option and in a try/except
+    if kver == "":
+        print "could not find version of %s, autodetecting" % config["kernelType"]
+        kver = os.uname()[2]
+
+    config["kernelVersion"] = kver
+
 class BaseSystem:
     def __init__(self):
-        self.kver = config.kernelVersion
-        self.tmpDir = config.tmpDir
-        self.baseDirs = ["bin", "sbin", "etc", "dev", "dev/loop", "lib", "newroot", "proc", "sys"]
+        self.kver = config["kernelVersion"]
+        self.tmpDir = config["tmpDir"]
+        self.baseDirs = ["bin", "sbin", "etc/initramfs.d", "dev", "dev/loop", "lib", "newroot", "proc", "sys"]
 
         self.deviceNodes = {"null": ["c", 1, 3],
                             "console": ["c", 5, 1],
@@ -131,6 +154,12 @@ class BaseSystem:
 
         writeFile(self.getNewRoot("/etc/fstab"), "none none none defaults 0 0")
 
+    def createConfig(self):
+        # FIXME: Parse config files and create a proper one by hand
+        configFileSource = config["initramfsConf"]
+        if os.path.exists(configFileSource):
+            copy(configFileSource, self.getNewRoot(configFileSource))
+
     def createNodes(self):
         for i in self.deviceNodes:
             k = self.deviceNodes[i]
@@ -164,6 +193,7 @@ class BaseSystem:
         self.copyBasefiles()
         self.createNodes()
         self.createBaseSymlinks()
+        self.createConfig()
         self.addRaid()
         self.addSuspend()
 
@@ -172,17 +202,17 @@ class KernelModule:
         self.modulesList = []
         self.allModules = []
         self.blackList = ["pktcdvd"]
-        self.kernelVersion = config.kernelVersion
+        self.kernelVersion = config["kernelVersion"]
 
-        self.targetDir = config.tmpDir
-        self.rootDir = config.rootDir
+        self.targetDir = config["tmpDir"]
+        self.rootDir = config["rootDir"]
         self.modulesDir = os.path.join(self.rootDir, "lib/modules/%s" % self.kernelVersion)
         self.firmwareDir = os.path.join(self.rootDir, "lib/firmware")
 
-        self.addNetworkModule = config.networkModule
-        self.addNetworkModuleBasic = config.networkModuleBasic
+        self.addNetworkModule = config["networkModule"]
+        self.addNetworkModuleBasic = config["networkModuleBasic"]
 
-        self.addDRMModule = config.drmModule
+        self.addDRMModule = config["drmModule"]
         self.findAllModules()
 
         self.scsiDirs = ["kernel/drivers/scsi"]
@@ -383,7 +413,7 @@ class Splash:
         self.themeDir = "/etc/bootsplash/themes"
         self.defaultTheme = "Pardus"
         self.defaultResolutions = ["1024x768"]
-        self.targetDir = config.tmpDir
+        self.targetDir = config["tmpDir"]
 
         self.theme = self.defaultTheme
         self.resolutions = self.defaultResolutions
@@ -414,9 +444,9 @@ class Splash:
 
 class Initramfs:
     def __init__(self):
-        self.destDir = config.destDir
-        self.sourceDir = config.tmpDir
-        self.initramfs = "initramfs-%s" % config.kernelVersion
+        self.destDir = config["destDir"]
+        self.sourceDir = config["tmpDir"]
+        self.initramfs = "initramfs-%s" % config["kernelVersion"]
 
     def create(self):
         if not os.path.exists(self.destDir):
@@ -439,37 +469,11 @@ class Tempdir:
         else:
             shutil.rmtree(self.tmpDir)
 
-class Config:
-    def __init__(self):
-        self.rootDir = "/"
-        self.kernelType = "kernel"
-        self.kernelVersion = ""
-        self.tmpDir = ""
-        self.destDir = "/boot"
-        self.debug = False
-        self.dryrun = False
-
-    def setKernelVersion(self, Version=""):
-        if Version == "":
-            kver = "".join(loadFile("/etc/kernel/%s" % self.kernelType))
-        else:
-            kver = Version
-
-        # FIXME: we should do this an option and in a try/except
-        if kver == "":
-            print "could not find version of %s, autodetecting" % self.kernelType
-            kver = os.uname()[2]
-
-        self.kernelVersion = kver
-
 
 if __name__ == "__main__":
-    config = Config()
-    config.setKernelVersion()
-
     tempdir = Tempdir()
     tempdir.create()
-    config.tmpDir = tempdir.tmpDir
+    config["tmpDir"] = tempdir.tmpDir
 
     parser = OptionParser()
     parser.add_option("-k", "--kernel", dest="kernelVersion", type="string",
@@ -501,22 +505,22 @@ if __name__ == "__main__":
 
     (opts, args) = parser.parse_args()
 
-    config.destDir = os.path.abspath(opts.destDir)
-    config.rootDir = os.path.abspath(opts.rootDir)
+    config["destDir"] = os.path.abspath(opts.destDir)
+    config["rootDir"] = os.path.abspath(opts.rootDir)
 
-    config.debug = opts.debug
-    #config.dryrun = opts.dryrun
+    config["debug"] = opts.debug
+    #config["dryrun"] = opts.dryrun
     tempdir.keepTmp = opts.keepTmp
 
-    config.kernelType = opts.type
-    config.networkModule = opts.networkModule
-    config.networkModuleBasic = opts.networkModuleBasic
-    config.drmModule = opts.drmModule
+    config["kernelType"] = opts.type
+    config["networkModule"] = opts.networkModule
+    config["networkModuleBasic"] = opts.networkModuleBasic
+    config["drmModule"] = opts.drmModule
 
     if opts.kernelVersion:
-        config.kernelVersion = opts.kernelVersion
+        config["kernelVersion"] = opts.kernelVersion
     else:
-        config.setKernelVersion()
+        setKernelVersion()
 
     basesystem = BaseSystem()
     basesystem.create()
