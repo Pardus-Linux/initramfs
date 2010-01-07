@@ -290,7 +290,7 @@ mount_cdroot() {
     #        in kernel world. Suggestions that do not include this kind of regexp mania are welcome
 
     # for userspace applications
-    REAL_ROOT_TYPE=`echo "${REAL_ROOT}" | sed -e 's/^\/dev\///' | grep -qE '^sr[0-9]*|^hd[a-z]|^pcd[0-9]|^xvd*' && echo "optical" || echo "harddisk"`
+    REAL_ROOT_TYPE=`echo "${ROOT_DEVICE}" | sed -e 's/^\/newroot\/dev\///' | grep -qE '^sr[0-9]*|^hd[a-z]|^pcd[0-9]|^xvd*' && echo "optical" || echo "harddisk"`
     echo "${REAL_ROOT_TYPE}" > /newroot/var/run/pardus/livemedia
 
     # this is needed for yali
