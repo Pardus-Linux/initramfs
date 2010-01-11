@@ -2,6 +2,9 @@
 		* Add copytoram kernel parameter to copy all live files to ram befor
 		switchroot
 
+2010-01-05 Ozan Çağlayan <ozan [at] pardus.org.tr>
+		* Implement blacklisting and blacklist floppy.
+
 2010-01-04 Onur Küçük <onur [at] pardus.org.tr>
 		* Sanitize some variable names
 		* Add /etc/initramfs/initramfs.conf parser

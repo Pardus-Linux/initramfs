@@ -201,7 +201,7 @@ class KernelModule:
     def __init__(self):
         self.modulesList = []
         self.allModules = []
-        self.blackList = ["pktcdvd"]
+        self.blackList = ["pktcdvd", "floppy"]
         self.kernelVersion = config["kernelVersion"]
 
         self.targetDir = config["tmpDir"]
@@ -250,7 +250,8 @@ class KernelModule:
 
     def installModules(self):
         for i in self.modulesList:
-            copy(i, os.path.join(self.targetDir, self.modulesDir.replace(self.rootDir, "/").lstrip("/")))
+            if os.path.basename(i).replace(".ko", "") not in self.blackList:
+                copy(i, os.path.join(self.targetDir, self.modulesDir.replace(self.rootDir, "/").lstrip("/")))
 
     def findAllModules(self):
         foundModules = []
