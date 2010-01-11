@@ -483,6 +483,8 @@ if __name__ == "__main__":
             help="kernel type to create initramfs for")
     parser.add_option("-o", "--output", dest="destDir", type="string", metavar="DIR", default="/boot",
             help="create initramfs in DIR")
+    parser.add_option("-c", "--configfile", dest="configFile", type="string", metavar="FILE", default="/etc/initramfs.conf",
+            help="use FILE for initramfs config file, default is /etc/initramfs.conf")
     parser.add_option("-r", "--rootdir", dest="rootDir", type="string", metavar="DIR", default="/",
             help="use DIR as basedir for kernel modules")
     parser.add_option("-f", "--filename", dest="filename", type="string", metavar="FILE",
@@ -505,6 +507,8 @@ if __name__ == "__main__":
     #        help="do not perform any action, just show what will be done")
 
     (opts, args) = parser.parse_args()
+
+    config["initramfsConf"] = opts.configFile
 
     config["destDir"] = os.path.abspath(opts.destDir)
     config["rootDir"] = os.path.abspath(opts.rootDir)
