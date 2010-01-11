@@ -21,6 +21,7 @@ config = {"rootDir": "/",
           "kernelVersion": "",
           "tmpDir": "",
           "destDir": "/boot",
+          "blackList": ["pktcdvd", "floppy"],
           "debug": False,
           "dryrun": False
 }
@@ -201,7 +202,7 @@ class KernelModule:
     def __init__(self):
         self.modulesList = []
         self.allModules = []
-        self.blackList = ["pktcdvd", "floppy"]
+        self.blackList = config["blackList"]
         self.kernelVersion = config["kernelVersion"]
 
         self.targetDir = config["tmpDir"]
@@ -491,6 +492,8 @@ if __name__ == "__main__":
             help="use FILE for initramfs file name")
     parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False,
             help="print extra debug info")
+    parser.add_option("--blacklist", dest="blackList", type="string", metavar="FILES", default="",
+            help="define modules to be blacklisted, seperated by comma. Example: e100,rtl819,ahci")
     parser.add_option("--network", action="store_true", dest="networkModule", default=False,
             help="add network modules")
     parser.add_option("--drm", action="store_true", dest="drmModule", default=False,
@@ -521,6 +524,9 @@ if __name__ == "__main__":
     config["networkModule"] = opts.networkModule
     config["networkModuleBasic"] = opts.networkModuleBasic
     config["drmModule"] = opts.drmModule
+
+    if "," in opts.blackList:
+        config["blackList"].extend(opts.blackList.split(","))
 
     if opts.kernelVersion:
         config["kernelVersion"] = opts.kernelVersion
