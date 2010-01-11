@@ -18,6 +18,7 @@ NFSROOT=0
 QUIET=0
 RAID=0
 VIRTIO=0
+COPYTORAM=0
 
 FS_TYPE=""
 ROOT_FLAGS=""
@@ -118,6 +119,9 @@ parse_config() {
             noresume=*)
                 NORESUME=$(echo $inputline|cut -f2- -d=)
             ;;
+            copytoram)
+                COPYTORAM=1
+            ;;
             init=*)
                 INIT="${x#INIT=}"
             ;;
@@ -171,6 +175,9 @@ parse_cmdline() {
             init=*)
                 INIT="${x#init=}"
             ;;
+            copytoram)
+                COPYTORAM=1
+            ;;
             quiet)
                 QUIET=1
             ;;
@@ -191,6 +198,15 @@ find_live_mount() {
                 if [ -e /newroot/mnt/cdrom/${LOOPBACKFILE} ]
                 then
                     ROOT_DEVICE="${x}"
+                    if [ "$COPYTORAM" == "1" ]
+                    then
+                        info "Copying Live Media files to RAM"
+                        mkdir /newroot/mnt/cdromtemp
+                        cp -af /newroot/mnt/cdrom/* /newroot/mnt/cdromtemp/
+                        umount /newroot/mnt/cdrom
+                        rmdir /newroot/mnt/cdrom
+                        mv /newroot/mnt/cdromtemp /newroot/mnt/cdrom
+                    fi
                     break
                 else
                     umount /newroot/mnt/cdrom
