@@ -1,3 +1,6 @@
+2010-01-15 Fatih Aşıcı <fatih [at] pardus.org.tr>
+		* Write info messages into the kernel ring buffer
+
 2010-01-11 Onur Küçük <onur [at] pardus.org.tr>
 		* Add copytoram kernel parameter to copy all live files to ram befor
 		switchroot

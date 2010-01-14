@@ -30,7 +30,7 @@ MNTDIR=""
 info() {
     if [ "$QUIET" -eq "0" ]
     then
-        echo "[  $(cat /proc/uptime 2>/dev/null | cut -f1 -d' ')0000] initramfs: $1"
+        echo "<6>initramfs: $1" > /dev/kmsg
     fi
 }
 

@@ -116,7 +116,8 @@ class BaseSystem:
                             "tty1": ["c", 4, 1],
                             "ram0": ["b", 1, 0],
                             "fb0": ["c", 29, 0],
-                            "urandom": ["c", 1, 9]
+                            "urandom": ["c", 1, 9],
+                            "kmsg": ["c", 1, 11]
                            }
 
         self.baseFileList = {"/lib/initramfs/busybox": "/bin/",
