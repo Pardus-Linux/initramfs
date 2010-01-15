@@ -431,12 +431,11 @@ else
     fi
 fi
 
-info "Preparing to switch to the real root"
 umount -n /sys
 umount -n /proc
 
 [ "${INIT}" == "" ] && INIT="/sbin/init";
 
 # and we start
+info "Switching to the real root"
 exec /bin/switch_root -c /dev/console /newroot ${INIT} ${LEVEL}
-
