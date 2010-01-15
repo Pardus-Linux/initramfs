@@ -28,10 +28,7 @@ RESUME_DEVICE=""
 MNTDIR=""
 
 info() {
-    if [ "$QUIET" -eq "0" ]
-    then
-        echo "<6>initramfs: $1" > /dev/kmsg
-    fi
+    echo "<6>initramfs: $1" > /dev/kmsg
 }
 
 fall2sh() {
