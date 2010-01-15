@@ -316,6 +316,8 @@ mount_cdroot() {
 
 # ----- main -------
 
+info "Starting init on initramfs"
+
 mount -n -t proc proc /proc > /dev/null 2>&1
 mount -n -t sysfs sys /sys > /dev/null 2>&1
 
@@ -327,8 +329,6 @@ then
 fi
 
 parse_cmdline
-
-info "Starting init on initramfs"
 
 if [ "${ROOT_TARGET}" == "shellnoprobe" ]
 then
