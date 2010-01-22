@@ -57,10 +57,7 @@ mount_rootfs() {
     FS_TYPE=`disktype $ROOT_DEVICE | grep KERNELMODULE | awk '{print $2}'`
     if [ -f /lib/modules/*/$FS_TYPE.ko ]
     then
-        info "Found module $FS_TYPE, probing it.."
         modprobe $FS_TYPE 1> /dev/null 2>&1
-    else
-        info "Module $FS_TYPE not found, probably built-in"
     fi
     mount -r -t $FS_TYPE -n ${ROOT_FLAGS} ${ROOT_DEVICE} /newroot
 }
