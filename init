@@ -43,21 +43,14 @@ probe_devices() {
 
 probe_raid() {
     info "Probing RAID devices"
-    modprobe dm-mod
-    modprobe raid0
-    modprobe raid1
-    modprobe raid10
-    modprobe raid456
+    modprobe -a dm-mod raid0 raid1 raid10 raid456
     /sbin/mdadm --examine --scan > /etc/mdadm.conf
     /sbin/mdadm -As
 }
 
 probe_virtio() {
     info "Probing Virtio devices"
-    modprobe virtio_pci
-    modprobe virtio_balloon
-    modprobe virtio_blk
-    modprobe virtio_net
+    modprobe -a virtio_pci virtio_balloon virtio_blk virtio_net
 }
 
 mount_rootfs() {
