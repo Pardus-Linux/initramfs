@@ -357,7 +357,7 @@ class KernelModule:
         if self.addDRMModule:
             for i in glob.glob("%s/*/*.ko" % os.path.join(self.modulesDir, self.drmDir)):
                 # Check for drm_crtc_init symbol
-                if os.popen("/usr/bin/nm -uPA %s | grep drm_crtc_init" % i).read().strip():
+                if not os.system("grep -qw drm_crtc_init %s" % i):
                     self.addModule(i.partition(self.modulesDir+'/')[-1])
 
     def addMd(self):
