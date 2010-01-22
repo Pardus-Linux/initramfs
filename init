@@ -55,10 +55,6 @@ probe_virtio() {
 
 mount_rootfs() {
     FS_TYPE=`disktype $ROOT_DEVICE | grep KERNELMODULE | awk '{print $2}'`
-    if [ -f /lib/modules/*/$FS_TYPE.ko ]
-    then
-        modprobe $FS_TYPE 1> /dev/null 2>&1
-    fi
     mount -r -t $FS_TYPE -n ${ROOT_FLAGS} ${ROOT_DEVICE} /newroot
 }
 
@@ -361,10 +357,7 @@ then
     manage_tmpfs
 
     # modprobe filesystems that are not in kernel, for live disks
-    for i in nls_cp857 nls_utf8 vfat
-    do
-        modprobe ${i} 1> /dev/null 2>&1
-    done
+    modprobe -qa nls_cp857 nls_utf8 vfat
 
     for i in `seq 50`
     do
