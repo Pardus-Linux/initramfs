@@ -43,14 +43,17 @@ probe_devices() {
 
 probe_raid() {
     info "Probing RAID devices"
-    modprobe -a dm-mod raid0 raid1 raid10 raid456
-    /sbin/mdadm --examine --scan > /etc/mdadm.conf
-    /sbin/mdadm -As
+    modprobe -qa dm-mod raid0 raid1 raid10 raid456
+    if [ -x /sbin/mdadm ]
+    then
+        /sbin/mdadm --examine --scan > /etc/mdadm.conf
+        /sbin/mdadm -As
+    fi
 }
 
 probe_virtio() {
     info "Probing Virtio devices"
-    modprobe -a virtio_pci virtio_balloon virtio_blk virtio_net
+    modprobe -qa virtio_pci virtio_balloon virtio_blk virtio_net
 }
 
 mount_rootfs() {
@@ -69,47 +72,6 @@ resume_from_hibernate() {
             /bin/resume
         fi
     fi
-}
-
-# FIXME: maybe we should just source the file instead of parsing
-#        also consider merging conf parser and cmdline parser
-parse_config() {
-    while read inputline;
-    do
-        case "${inputline}" in
-            raid=*)
-                RAID=$(echo $inputline|cut -f2- -d=)
-            ;;
-            thin=*)
-                NFSROOT=$(echo $inputline|cut -f2- -d=)
-            ;;
-            virtio=*)
-                VIRTIO=$(echo $inputline|cut -f2- -d=)
-            ;;
-            root=*)
-                ROOT_TARGET=$(echo $inputline|cut -f2- -d=)
-            ;;
-            rootflags=*)
-                ROOT_FLAGS=$(echo $inputline|cut -f2- -d=)
-            ;;
-            liveroot=*)
-                LIVE=1
-                LIVEROOT=$(echo $inputline|cut -f2- -d=)
-            ;;
-            resume=*)
-                RESUME_DEVICE="${x#resume=}"
-            ;;
-            noresume=*)
-                NORESUME=$(echo $inputline|cut -f2- -d=)
-            ;;
-            copytoram)
-                COPYTORAM=1
-            ;;
-            init=*)
-                INIT="${x#INIT=}"
-            ;;
-        esac
-    done < $INITRAMFSCONF
 }
 
 parse_cmdline() {
@@ -304,15 +266,58 @@ info "Starting init on initramfs"
 mount -n -t proc proc /proc > /dev/null 2>&1
 mount -n -t sysfs sys /sys > /dev/null 2>&1
 
+# FIXME: maybe we should just source the file instead of parsing
+#        also consider merging conf parser and cmdline parser
+parse_config() {
+    while read inputline;
+    do
+        case "${inputline}" in
+            raid=*)
+                RAID=$(echo $inputline|cut -f2- -d=)
+            ;;
+            thin=*)
+                NFSROOT=$(echo $inputline|cut -f2- -d=)
+            ;;
+            virtio=*)
+                VIRTIO=$(echo $inputline|cut -f2- -d=)
+            ;;
+            root=*)
+                ROOT_TARGET=$(echo $inputline|cut -f2- -d=)
+            ;;
+            rootflags=*)
+                ROOT_FLAGS=$(echo $inputline|cut -f2- -d=)
+            ;;
+            liveroot=*)
+                LIVE=1
+                LIVEROOT=$(echo $inputline|cut -f2- -d=)
+            ;;
+            resume=*)
+                RESUME_DEVICE="${x#resume=}"
+            ;;
+            noresume=*)
+                NORESUME=$(echo $inputline|cut -f2- -d=)
+            ;;
+            copytoram)
+                COPYTORAM=1
+            ;;
+            init=*)
+                INIT="${x#INIT=}"
+            ;;
+        esac
+    done < $INITRAMFSCONF
+}
 
-# first parse config file, then cmdline to allow overwriting internal config
+# First parse config file, then cmdline to allow overwriting internal config
 if [ -f "$INITRAMFSCONF" ]
 then
-    parse_config
+    . $INITRAMFSCONF
+    # parse_config
 fi
 
+# Parse command line parameters
 parse_cmdline
 
+# Handle root= parameters
 if [ "${ROOT_TARGET}" == "shellnoprobe" ]
 then
     fall2sh "Starting up a shell without probing, as commanded"
@@ -328,6 +333,7 @@ then
     echo "1" > /proc/sys/kernel/printk
 fi
 
+# Probe devices
 probe_devices
 
 if [ "${RAID}" -eq "1" ]
@@ -379,7 +385,7 @@ then
     fi
 
     mount_cdroot
-elif [ "${NFSROOT}" -eq '1' ]
+elif [ "${NFSROOT}" -eq "1" ]
 then
     run_dhcpc
     manage_tmpfs
@@ -411,11 +417,12 @@ else
     fi
 fi
 
-umount -n /sys
-umount -n /proc
-
 [ "${INIT}" == "" ] && INIT="/sbin/init";
 
-# and we start
+# Move mounts instead of umount/mount
+mount --move /proc /newroot/proc
+mount --move /sys /newroot/sys
+
+# And we start
 info "Switching to the real root"
 exec /bin/switch_root -c /dev/console /newroot ${INIT} ${LEVEL}
