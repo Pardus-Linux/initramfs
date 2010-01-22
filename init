@@ -310,8 +310,8 @@ parse_config() {
 # First parse config file, then cmdline to allow overwriting internal config
 if [ -f "$INITRAMFSCONF" ]
 then
-    . $INITRAMFSCONF
-    # parse_config
+    #. $INITRAMFSCONF
+    parse_config
 fi
 
 # Parse command line parameters
