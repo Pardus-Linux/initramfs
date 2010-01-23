@@ -69,12 +69,20 @@ probe_devices() {
 }
 
 probe_devices_without_coolplug() {
+    # Set hotplug helper for firmware loading
+    # echo /sbin/hotplug > /proc/sys/kernel/hotplug
+
     probe_pci_devices
     probe_usb_devices
+
     if [ x"$HAS_MASS_STORAGE" == "x1" ]; then
         info "Found USB storage devices."
     fi
-    # FIXME: Shouldn't be needed with devtmpfs
+
+    # Unset hotplug helper
+    # echo > /proc/sys/kernel/hotplug
+
+    # FIXME: Shouldn't be needed when devtmpfs is enabled
     create_device_nodes
 }
 
