@@ -120,12 +120,13 @@ class BaseSystem:
                             "kmsg": ["c", 1, 11]
                            }
 
-        self.baseFileList = {"/lib/initramfs/busybox": "/bin/",
-                             "/lib/initramfs/busybox.links": "/bin/",
-                             "/usr/bin/disktype": "/bin/",
-                             "/sbin/coolplug": "/bin/",
-                             "/lib/initramfs/init": "/",
-                             "/lib/initramfs/udhcpc.script": "/etc/"
+        self.baseFileList = {"/lib/initramfs/busybox"       : "/bin/",
+                             "/lib/initramfs/busybox.links" : "/bin/",
+                             #"/lib/initramfs/hotplug"       : "/sbin/",
+                             "/usr/bin/disktype"            : "/bin/",
+                             "/sbin/coolplug"               : "/bin/",
+                             "/lib/initramfs/init"          : "/",
+                             "/lib/initramfs/udhcpc.script" : "/etc/",
                             }
 
         self.suspendFileList = {"/etc/suspend.conf": "/etc/",
