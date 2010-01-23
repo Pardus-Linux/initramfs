@@ -27,6 +27,12 @@ ROOT_TARGET=""
 RESUME_DEVICE=""
 MNTDIR=""
 
+HAS_MASS_STORAGE=0
+
+###########################
+# Miscellaneous functions #
+###########################
+
 info() {
     echo "<6>initramfs: $1" > /dev/kmsg
 }
@@ -36,9 +42,70 @@ fall2sh() {
     /bin/sh
 }
 
+run_dhcpc() {
+    udhcpc -C -i eth0 -s /etc/udhcpc.script
+}
+
+resume_from_hibernate() {
+    if [ -f "/sys/power/resume" ]
+    then
+        if [ -f "/bin/resume" ]
+        then
+            info "Resuming from hibernation"
+            # char device needed by static resume binary
+            /bin/mknod /dev/snapshot c 10 231
+            /bin/resume
+        fi
+    fi
+}
+
+##################
+# Device probers #
+##################
+
 probe_devices() {
     info "Calling coolplug to probe devices"
     /bin/coolplug 1> /dev/null 2>&1
+}
+
+probe_devices_without_coolplug() {
+    probe_pci_devices
+    probe_usb_devices
+    if [ x"$HAS_MASS_STORAGE" == "x1" ]; then
+        info "Found USB storage devices."
+    fi
+    # FIXME: Shouldn't be needed with devtmpfs
+    create_device_nodes
+}
+
+probe_drm() {
+    for device in /sys/bus/pci/devices/*/boot_vga; do
+        [ -f $device ] || continue
+        info "Loading KMS driver"
+        grep -q 1 $device && modprobe -b -q `cat ${device%boot_vga}modalias`
+    done
+}
+
+probe_pci_devices() {
+    info "Probing PCI devices"
+    local MODULES=""
+    for module in /sys/bus/pci/devices/*/modalias; do
+        [ -f $module ] || continue
+        MODULES="$MODULES $(cat $module)"
+    done
+    modprobe -b -q -a $MODULES
+}
+
+probe_usb_devices() {
+    info "Probing USB devices"
+    local MODULES=""
+    for module in /sys/bus/usb/devices/*/modalias; do
+        [ -f $module ] || continue
+        MODULES="$MODULES $(cat $module)"
+        grep -qw 08 ${module%modalias}bInterfaceClass && HAS_MASS_STORAGE=1
+    done
+
+    modprobe -b -q -a $MODULES
 }
 
 probe_raid() {
@@ -56,78 +123,31 @@ probe_virtio() {
     modprobe -qa virtio_pci virtio_balloon virtio_blk virtio_net
 }
 
+create_device_nodes() {
+    for block in /sys/block/*; do
+        [ -d $block ] || continue
+        # block e.g. sda or cciss!c0d0
+        NODEPATH="/dev/$(echo $(basename $block) | sed "s,!,/,g")"
+        [ ! -d $(dirname $NODEPATH) ] && echo mkdir -p $(dirname $NODEPATH)
+
+        mknod $NODEPATH b $(sed 's/:/ /' $block/dev) &> /dev/null
+
+        # Create partition nodes
+        for partitionid in $block/*/partition; do
+            [ -f $partitionid ] || continue
+            PARTPATH="/dev/$(echo $(basename `dirname $partitionid`) | sed "s,!,/,g")"
+            mknod $PARTPATH b $(sed 's/:/ /' "${partitionid%partition}dev") &> /dev/null
+        done
+    done
+}
+
+#################################
+# Filesystem specific functions #
+#################################
+
 mount_rootfs() {
     FS_TYPE=`disktype $ROOT_DEVICE | grep KERNELMODULE | awk '{print $2}'`
     mount -r -t $FS_TYPE -n ${ROOT_FLAGS} ${ROOT_DEVICE} /newroot
-}
-
-resume_from_hibernate() {
-    if [ -f "/sys/power/resume" ]
-    then
-        if [ -f "/bin/resume" ]
-        then
-            info "Resuming from hibernation"
-            # char device needed by static resume binary
-            /bin/mknod /dev/snapshot c 10 231
-            /bin/resume
-        fi
-    fi
-}
-
-parse_cmdline() {
-    for x in `cat /proc/cmdline`; do
-        case "${x}" in
-            [0123456Ss])
-                LEVEL=${x}
-            ;;
-            mudur=*)
-                for m in `echo ${x}|cut -f2 -d=|sed 's/,/ /g'`; do
-                    case "${m}" in
-                        livecd)
-                            LIVE=1
-                        ;;
-                        livedisk)
-                            LIVE=1
-                        ;;
-                        raid)
-                            RAID=1
-                        ;;
-                        thin)
-                            NFSROOT=1
-                        ;;
-                        virtio)
-                            VIRTIO=1
-                        ;;
-                    esac
-                done
-            ;;
-            root=*)
-                ROOT_TARGET=`echo ${x}|cut -f2- -d=`
-            ;;
-            rootflags=*)
-                ROOT_FLAGS="-o ${x#rootflags=}"
-            ;;
-            liveroot=*)
-                LIVE=1
-                LIVEROOT=$(echo $inputline|cut -f2- -d=)
-            ;;
-            resume=*)
-                RESUME_DEVICE="${x#resume=}"
-            ;;
-            noresume)
-                NORESUME=1
-            ;;
-            init=*)
-                INIT="${x#init=}"
-            ;;
-            copytoram)
-                COPYTORAM=1
-            ;;
-            quiet)
-                QUIET=1
-            ;;
-        esac
-    done
 }
 
 find_live_mount() {
@@ -176,10 +196,6 @@ manage_tmpfs() {
 
     # just to make sure, may not be necessary
     [ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
-}
-
-run_dhcpc() {
-    udhcpc -C -i eth0 -s /etc/udhcpc.script
 }
 
 mount_nfs() {
@@ -259,12 +275,9 @@ mount_cdroot() {
     echo "$MNTDIR" >> /newroot/etc/fstab
 }
 
-# ----- main -------
-
-info "Starting init on initramfs"
-
-mount -n -t proc proc /proc > /dev/null 2>&1
-mount -n -t sysfs sys /sys > /dev/null 2>&1
+##############################
+# Config and cmdline parsers #
+##############################
 
 # FIXME: maybe we should just source the file instead of parsing
 #        also consider merging conf parser and cmdline parser
@@ -306,6 +319,73 @@ parse_config() {
         esac
     done < $INITRAMFSCONF
 }
+
+parse_cmdline() {
+    for x in `cat /proc/cmdline`; do
+        case "${x}" in
+            [0123456Ss])
+                LEVEL=${x}
+            ;;
+            mudur=*)
+                for m in `echo ${x}|cut -f2 -d=|sed 's/,/ /g'`; do
+                    case "${m}" in
+                        livecd)
+                            LIVE=1
+                        ;;
+                        livedisk)
+                            LIVE=1
+                        ;;
+                        raid)
+                            RAID=1
+                        ;;
+                        thin)
+                            NFSROOT=1
+                        ;;
+                        virtio)
+                            VIRTIO=1
+                        ;;
+                    esac
+                done
+            ;;
+            root=*)
+                ROOT_TARGET=`echo ${x}|cut -f2- -d=`
+            ;;
+            rootflags=*)
+                ROOT_FLAGS="-o ${x#rootflags=}"
+            ;;
+            liveroot=*)
+                LIVE=1
+                LIVEROOT=$(echo $inputline|cut -f2- -d=)
+            ;;
+            resume=*)
+                RESUME_DEVICE="${x#resume=}"
+            ;;
+            noresume)
+                NORESUME=1
+            ;;
+            init=*)
+                INIT="${x#init=}"
+            ;;
+            copytoram)
+                COPYTORAM=1
+            ;;
+            quiet)
+                QUIET=1
+            ;;
+        esac
+    done
+}
+
+
+####################
+# init starts here #
+####################
+
+info "Starting init on initramfs"
+
+mount -n -t proc proc /proc > /dev/null 2>&1
+mount -n -t sysfs sys /sys > /dev/null 2>&1
+
 
 # First parse config file, then cmdline to allow overwriting internal config
 if [ -f "$INITRAMFSCONF" ]
@@ -385,6 +465,7 @@ then
     fi
 
     mount_cdroot
+
 elif [ "${NFSROOT}" -eq "1" ]
 then
     run_dhcpc
@@ -393,6 +474,7 @@ then
 
     # set hostname for mudur
     hostname $HOSTNAME
+
 else
     # mount real root
     info "Mounting real root"
@@ -419,6 +501,7 @@ fi
 
 [ "${INIT}" == "" ] && INIT="/sbin/init";
 
+# FIXME: Test these on livemedia bootings
 # Move mounts instead of umount/mount
 mount --move /proc /newroot/proc
 mount --move /sys /newroot/sys
