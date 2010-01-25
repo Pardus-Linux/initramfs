@@ -63,14 +63,14 @@ resume_from_hibernate() {
 # Device probers #
 ##################
 
-probe_devices() {
+probe_devices_with_coolplug() {
     info "Calling coolplug to probe devices"
     /bin/coolplug 1> /dev/null 2>&1
 }
 
-probe_devices_without_coolplug() {
+probe_devices() {
     # Set hotplug helper for firmware loading
-    # echo /sbin/hotplug > /proc/sys/kernel/hotplug
+    echo /sbin/hotplug > /proc/sys/kernel/hotplug
 
     probe_pci_devices
     probe_usb_devices
@@ -80,7 +80,7 @@ probe_devices_without_coolplug() {
     fi
 
     # Unset hotplug helper
-    # echo > /proc/sys/kernel/hotplug
+    echo > /proc/sys/kernel/hotplug
 
     # FIXME: Shouldn't be needed when devtmpfs is enabled
     create_device_nodes
@@ -408,11 +408,11 @@ parse_cmdline
 # Handle root= parameters
 if [ "${ROOT_TARGET}" == "shellnoprobe" ]
 then
-    fall2sh "Starting up a shell without probing, as commanded"
+    fall2sh "Starting up a shell without probing"
 elif [ "${ROOT_TARGET}" == "shell" ]
 then
     probe_devices
-    fall2sh "Starting up a shell, as commanded"
+    fall2sh "Starting up a shell"
 fi
 
 # Minimizing kernel noise
