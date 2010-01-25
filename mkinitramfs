@@ -59,7 +59,10 @@ def mknod(nodfile, nodtype, major, minor, perms=0666):
     os.mknod(nodfile, perms | devtype, os.makedev(major, minor))
 
 def copy(source, destination):
-    shutil.copy2(source, destination)
+    try:
+        shutil.copy2(source, destination)
+    except IOError:
+        printWarn("Could not find file %s" % source)
 
 def touch(_file):
     if os.path.exists(_file):
