@@ -19,6 +19,7 @@ QUIET=0
 RAID=0
 VIRTIO=0
 COPYTORAM=0
+
 HOTPLUG="/sbin/hotplug"
 
 FS_TYPE=""
@@ -80,16 +81,13 @@ probe_devices() {
 
     # Unset hotplug helper
     echo > /proc/sys/kernel/hotplug
-
-    # FIXME: Shouldn't be needed when devtmpfs is enabled
-    create_device_nodes
 }
 
 probe_kms() {
     for device in /sys/bus/pci/devices/*/boot_vga; do
         [ -f $device ] || continue
         info "Loading KMS driver"
-        grep -q 1 $device && modprobe -b -q `cat ${device%boot_vga}modalias`
+        grep -q 1 $device && modprobe -bq `cat ${device%boot_vga}modalias`
     done
 }
 
@@ -100,7 +98,7 @@ probe_pci_devices() {
         [ -f $module ] || continue
         MODULES="$MODULES $(cat $module)"
     done
-    modprobe -b -q -a $MODULES
+    modprobe -bqa $MODULES
 }
 
 probe_usb_devices() {
@@ -111,13 +109,12 @@ probe_usb_devices() {
         MODULES="$MODULES $(cat $module)"
         grep -qw 08 ${module%modalias}bInterfaceClass && HAS_MASS_STORAGE=1
     done
-
-    modprobe -b -q -a $MODULES
+    modprobe -bqa $MODULES
 }
 
 probe_raid() {
     info "Probing RAID devices"
-    modprobe -qa dm-mod raid0 raid1 raid10 raid456
+    modprobe -bqa dm-mod raid0 raid1 raid10 raid456
     if [ -x /sbin/mdadm ]
     then
         /sbin/mdadm --examine --scan > /etc/mdadm.conf
@@ -127,7 +124,7 @@ probe_raid() {
 
 probe_virtio() {
     info "Probing Virtio devices"
-    modprobe -qa virtio_pci virtio_balloon virtio_blk virtio_net
+    modprobe -bqa virtio_pci virtio_balloon virtio_blk virtio_net
 }
 
 create_device_nodes() {
@@ -209,7 +206,7 @@ mount_nfs() {
     cd /newroot
 
     # FIXME: busybox mount does not load automatically
-    modprobe nfs
+    modprobe -q nfs
 
     # mount nfs
     if [ -z "/etc/udhcpc.info" ]
@@ -249,7 +246,7 @@ mount_nfs() {
 mount_cdroot() {
 
     # These are not loaded automatically
-    modprobe squashfs
+    modprobe -q squashfs
 
     cd /newroot
     # Loop type squashfs
