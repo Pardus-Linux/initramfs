@@ -127,30 +127,13 @@ probe_virtio() {
     modprobe -bqa virtio_pci virtio_balloon virtio_blk virtio_net
 }
 
-create_device_nodes() {
-    for block in /sys/block/*; do
-        [ -d $block ] || continue
-        # block e.g. sda or cciss!c0d0
-        NODEPATH="/dev/$(echo $(basename $block) | sed "s,!,/,g")"
-        [ ! -d $(dirname $NODEPATH) ] && echo mkdir -p $(dirname $NODEPATH)
-
-        mknod $NODEPATH b $(sed 's/:/ /' $block/dev) &> /dev/null
-
-        # Create partition nodes
-        for partitionid in $block/*/partition; do
-            [ -f $partitionid ] || continue
-            PARTPATH="/dev/$(echo $(basename `dirname $partitionid`) | sed "s,!,/,g")"
-            mknod $PARTPATH b $(sed 's/:/ /' "${partitionid%partition}dev") &> /dev/null
-        done
-    done
-}
-
 #################################
 # Filesystem specific functions #
 #################################
 
 mount_rootfs() {
     FS_TYPE=`disktype $ROOT_DEVICE | grep KERNELMODULE | awk '{print $2}'`
+    info "Mounting rootfs: $ROOT_DEVICE"
     mount -r -t $FS_TYPE -n ${ROOT_FLAGS} ${ROOT_DEVICE} /newroot
 }
 
@@ -453,7 +436,7 @@ then
 
     for i in `seq 50`
     do
-        t=`findfs ${LIVEROOT} --no-floppy 2>/dev/null`
+        t=`findfs ${LIVEROOT} 2>/dev/null`
         find_live_mount "/newroot$t"
 
         if [ "${ROOT_DEVICE}" != "" ]
@@ -482,12 +465,11 @@ then
     hostname $HOSTNAME
 
 else
-    # mount real root
-    info "Mounting real root"
+    # Wait until ROOT_DEVICE appears
     for i in `seq 50`
     do
         # let findfs handle all conversion
-        ROOT_DEVICE=`findfs ${ROOT_TARGET} --no-floppy 2>/dev/null`
+        ROOT_DEVICE=`findfs ${ROOT_TARGET} 2>/dev/null`
 
         if [ ! -b "${ROOT_DEVICE}" ]
         then
