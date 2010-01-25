@@ -4,28 +4,26 @@
 # Pardus initramfs creator
 #
 
-
 import os
 import sys
 import glob
 import stat
-import tempfile
 import shutil
+import tempfile
 import subprocess
 
 from optparse import OptionParser
 
-config = {"rootDir": "/",
-          "initramfsConf": "/etc/initramfs.conf",
-          "kernelType": "kernel",
-          "kernelVersion": "",
-          "tmpDir": "",
-          "destDir": "/boot",
-          "blackList": ["pktcdvd", "floppy"],
-          "debug": False,
-          "dryrun": False
+config = {"rootDir"         : "/",
+          "tmpDir"          : "",
+          "debug"           : False,
+          "dryrun"          : False,
+          "destDir"         : "/boot",
+          "blackList"       : ["pktcdvd", "floppy"],
+          "kernelType"      : "kernel",
+          "initramfsConf"   : "/etc/initramfs.conf",
+          "kernelVersion"   : "",
 }
-
 
 def loadFile(_file):
     try:
@@ -109,20 +107,20 @@ class BaseSystem:
         self.tmpDir = config["tmpDir"]
         self.baseDirs = ["bin", "sbin", "etc/initramfs.d", "dev", "dev/loop", "lib", "newroot", "proc", "sys"]
 
-        self.deviceNodes = {"null": ["c", 1, 3],
-                            "console": ["c", 5, 1],
-                            "tty": ["c", 5, 0],
-                            "tty0": ["c", 4, 0],
-                            "tty1": ["c", 4, 1],
-                            "ram0": ["b", 1, 0],
-                            "fb0": ["c", 29, 0],
-                            "urandom": ["c", 1, 9],
-                            "kmsg": ["c", 1, 11]
+        self.deviceNodes = {"null"      : ["c", 1, 3],
+                            "console"   : ["c", 5, 1],
+                            "tty"       : ["c", 5, 0],
+                            "tty0"      : ["c", 4, 0],
+                            "tty1"      : ["c", 4, 1],
+                            "ram0"      : ["b", 1, 0],
+                            "fb0"       : ["c", 29, 0],
+                            "urandom"   : ["c", 1, 9],
+                            "kmsg"      : ["c", 1, 11],
                            }
 
         self.baseFileList = {"/lib/initramfs/busybox"       : "/bin/",
                              "/lib/initramfs/busybox.links" : "/bin/",
-                             #"/lib/initramfs/hotplug"       : "/sbin/",
+                             "/lib/initramfs/hotplug"       : "/sbin/",
                              "/usr/bin/disktype"            : "/bin/",
                              "/sbin/coolplug"               : "/bin/",
                              "/lib/initramfs/init"          : "/",
@@ -299,7 +297,7 @@ class KernelModule:
 
             else:
                 # FIXME: we miss lots of firmware !
-                # printWarn("Could not find firmware %s" % src)
+                printWarn("Could not find firmware %s" % src)
                 pass
 
     def addDir(self, mdir):
@@ -469,7 +467,7 @@ class Tempdir:
 
     def cleanup(self):
         if self.keepTmp:
-            printWarn("keeping tempdir %s" % self.tmpDir)
+            printWarn("Keeping temporary directory %s" % self.tmpDir)
         else:
             shutil.rmtree(self.tmpDir)
 
@@ -498,7 +496,7 @@ if __name__ == "__main__":
             help="define modules to be blacklisted, seperated by comma. Example: e100,rtl819,ahci")
     parser.add_option("--network", action="store_true", dest="networkModule", default=False,
             help="add network modules")
-    parser.add_option("--drm", action="store_true", dest="drmModule", default=False,
+    parser.add_option("--drm", action="store_true", dest="drmModule", default=True,
             help="add KMS capable DRM modules")
     parser.add_option("--network-generic", action="store_true", dest="networkModuleBasic", default=False,
             help="add only generic network modules")
