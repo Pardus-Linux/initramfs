@@ -19,6 +19,7 @@ QUIET=0
 RAID=0
 VIRTIO=0
 COPYTORAM=0
+HOTPLUG="/sbin/hotplug"
 
 FS_TYPE=""
 ROOT_FLAGS=""
@@ -63,19 +64,19 @@ resume_from_hibernate() {
 # Device probers #
 ##################
 
-probe_devices_with_coolplug() {
-    info "Calling coolplug to probe devices"
-    /bin/coolplug 1> /dev/null 2>&1
-}
-
 probe_devices() {
     # Set hotplug helper for firmware loading
-    echo /sbin/hotplug > /proc/sys/kernel/hotplug
+    echo $HOTPLUG > /proc/sys/kernel/hotplug
+
+    if [ "x$1" == "x--with-kms" ]; then
+        probe_kms
+    fi
 
     probe_pci_devices
     probe_usb_devices
 
     if [ x"$HAS_MASS_STORAGE" == "x1" ]; then
+        # FIXME: Should we wait here?
         info "Found USB storage devices."
     fi
 
@@ -86,7 +87,7 @@ probe_devices() {
     create_device_nodes
 }
 
-probe_drm() {
+probe_kms() {
     for device in /sys/bus/pci/devices/*/boot_vga; do
         [ -f $device ] || continue
         info "Loading KMS driver"
@@ -394,7 +395,6 @@ info "Starting init on initramfs"
 mount -n -t proc proc /proc > /dev/null 2>&1
 mount -n -t sysfs sys /sys > /dev/null 2>&1
 
-
 # First parse config file, then cmdline to allow overwriting internal config
 if [ -f "$INITRAMFSCONF" ]
 then
@@ -411,7 +411,7 @@ then
     fall2sh "Starting up a shell without probing"
 elif [ "${ROOT_TARGET}" == "shell" ]
 then
-    probe_devices
+    probe_devices --with-kms
     fall2sh "Starting up a shell"
 fi
 
@@ -422,17 +422,10 @@ then
 fi
 
 # Probe devices
-probe_devices
+probe_devices --with-kms
 
-if [ "${RAID}" -eq "1" ]
-then
-    probe_raid
-fi
-
-if [ "${VIRTIO}" -eq "1" ]
-then
-    probe_virtio
-fi
+[ "${RAID}" -eq "1" ] && probe_raid
+[ "${VIRTIO}" -eq "1" ] && probe_virtio
 
 if [ "${RESUME_DEVICE}" != "" ]
 then
