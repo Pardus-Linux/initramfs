@@ -68,9 +68,7 @@ probe_devices() {
     # Set hotplug helper for firmware loading
     echo $HOTPLUG > /proc/sys/kernel/hotplug
 
-    if [ "x$1" == "x--with-kms" ]; then
-        probe_kms
-    fi
+    [ "x$1" = "x--with-kms" ] && probe_kms
 
     probe_pci_devices
     probe_usb_devices
