@@ -390,8 +390,18 @@ parse_cmdline() {
 
 info "Starting init on initramfs"
 
-mount -n -t proc proc /proc > /dev/null 2>&1
-mount -n -t sysfs sys /sys > /dev/null 2>&1
+# Mount needed filesystems
+mount -n -t proc proc /proc
+mount -n -t sysfs sysfs /sys
+
+# Prepare /dev (Needs kernel >= 2.6.32)
+mount -t devtmpfs devtmpfs /dev
+mkdir -m 0755 /dev/pts
+mount -t devpts -o gid=5,mode=620 devpts /dev/pts
+
+# Set some aliases for ls
+alias ls='ls --color=auto'
+alias ll='ls --color -l'
 
 # First parse config file, then cmdline to allow overwriting internal config
 if [ -f "$INITRAMFSCONF" ]
@@ -502,6 +512,7 @@ fi
 
 # FIXME: Test these on livemedia bootings
 # Move mounts instead of umount/mount
+mount --move /dev /newroot/dev
 mount --move /proc /newroot/proc
 mount --move /sys /newroot/sys
 
