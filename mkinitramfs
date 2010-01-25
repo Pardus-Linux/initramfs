@@ -69,8 +69,8 @@ def touch(_file):
         f.close()
 
 def uniq(alist):
-    set = {}
-    return [set.setdefault(e,e) for e in alist if e not in set]
+    _set = {}
+    return [_set.setdefault(e,e) for e in alist if e not in _set]
 
 def capture(*cmd):
     a = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -213,7 +213,7 @@ class KernelModule:
         self.addNetworkModule = config["networkModule"]
         self.addNetworkModuleBasic = config["networkModuleBasic"]
 
-        self.addDRMModule = config["drmModule"]
+        self.addDRMModules = not config["excludeDRM"]
         self.findAllModules()
 
         self.scsiDirs = ["kernel/drivers/scsi"]
@@ -353,7 +353,7 @@ class KernelModule:
                 self.addModule(i)
 
     def addDRM(self):
-        if self.addDRMModule:
+        if self.addDRMModules:
             for i in glob.glob("%s/*/*.ko" % os.path.join(self.modulesDir, self.drmDir)):
                 # Check for drm_crtc_init symbol
                 if not os.system("grep -qw drm_crtc_init %s" % i):
@@ -496,8 +496,8 @@ if __name__ == "__main__":
             help="define modules to be blacklisted, seperated by comma. Example: e100,rtl819,ahci")
     parser.add_option("--network", action="store_true", dest="networkModule", default=False,
             help="add network modules")
-    parser.add_option("--drm", action="store_true", dest="drmModule", default=True,
-            help="add KMS capable DRM modules")
+    parser.add_option("--nodrm", action="store_true", dest="excludeDRM", default=False,
+            help="Don't include KMS capable DRM modules")
     parser.add_option("--network-generic", action="store_true", dest="networkModuleBasic", default=False,
             help="add only generic network modules")
     parser.add_option("--keeptmp", action="store_true", dest="keepTmp", default=False,
@@ -523,7 +523,7 @@ if __name__ == "__main__":
     config["kernelType"] = opts.type
     config["networkModule"] = opts.networkModule
     config["networkModuleBasic"] = opts.networkModuleBasic
-    config["drmModule"] = opts.drmModule
+    config["excludeDRM"] = opts.excludeDRM
 
     if "," in opts.blackList:
         config["blackList"].extend(opts.blackList.split(","))
