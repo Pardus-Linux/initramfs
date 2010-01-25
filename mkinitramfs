@@ -125,7 +125,6 @@ class BaseSystem:
                              "/lib/initramfs/busybox.links" : "/bin/",
                              "/lib/initramfs/hotplug"       : "/sbin/",
                              "/usr/bin/disktype"            : "/bin/",
-                             "/sbin/coolplug"               : "/bin/",
                              "/lib/initramfs/init"          : "/",
                              "/lib/initramfs/udhcpc.script" : "/etc/",
                             }
