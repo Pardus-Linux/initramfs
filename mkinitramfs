@@ -127,6 +127,7 @@ class BaseSystem:
                              "/usr/bin/disktype"            : "/bin/",
                              "/lib/initramfs/init"          : "/",
                              "/lib/initramfs/udhcpc.script" : "/etc/",
+                             "/lib/initramfs/profile.rc" : "/etc/profile",
                             }
 
         self.suspendFileList = {"/etc/suspend.conf": "/etc/",
