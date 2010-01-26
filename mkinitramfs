@@ -452,7 +452,7 @@ class Splash:
 
     def makeDefaults(self):
         self.findResolutions()
-        self.resolutions = splash.availableResolutions
+        self.resolutions = self.availableResolutions
         self.make()
 
 class Initramfs:
