@@ -22,12 +22,13 @@ COPYTORAM=0
 
 HOTPLUG="/sbin/hotplug"
 
+MNTDIR=""
 FS_TYPE=""
+INITRAMFS=""
 ROOT_FLAGS=""
 ROOT_DEVICE=""
 ROOT_TARGET=""
 RESUME_DEVICE=""
-MNTDIR=""
 
 HAS_MASS_STORAGE=0
 
@@ -41,7 +42,9 @@ info() {
 
 fall2sh() {
     echo "--> $*"
-    /bin/sh
+
+    # Use a login shell for sourcing /etc/profile
+    /bin/sh -l
 }
 
 run_dhcpc() {
@@ -334,6 +337,9 @@ parse_cmdline() {
                     esac
                 done
             ;;
+            initramfs=*)
+                INITRAMFS=`echo ${x}|cut -f2- -d=`
+            ;;
             root=*)
                 ROOT_TARGET=`echo ${x}|cut -f2- -d=`
             ;;
@@ -379,10 +385,6 @@ mount -t devtmpfs devtmpfs /dev
 mkdir -m 0755 /dev/pts
 mount -t devpts -o gid=5,mode=620 devpts /dev/pts
 
-# Set some aliases for ls
-alias ls='ls --color=auto'
-alias ll='ls --color -l'
-
 # First parse config file, then cmdline to allow overwriting internal config
 if [ -f "$INITRAMFSCONF" ]
 then
@@ -393,11 +395,11 @@ fi
 # Parse command line parameters
 parse_cmdline
 
-# Handle root= parameters
-if [ "${ROOT_TARGET}" == "shellnoprobe" ]
+# Handle initramfs= parameter
+if [ "${INITRAMFS}" == "shellnoprobe" ]
 then
     fall2sh "Starting up a shell without probing"
-elif [ "${ROOT_TARGET}" == "shell" ]
+elif [ "${INITRAMFS}" == "shell" ]
 then
     probe_devices --with-kms
     fall2sh "Starting up a shell"
