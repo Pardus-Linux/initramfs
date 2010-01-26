@@ -127,8 +127,10 @@ class BaseSystem:
                              "/usr/bin/disktype"            : "/bin/",
                              "/lib/initramfs/init"          : "/",
                              "/lib/initramfs/udhcpc.script" : "/etc/",
-                             "/lib/initramfs/profile.rc" : "/etc/profile",
+                             "/lib/initramfs/profile.rc"    : "/etc/profile",
                             }
+
+        self.modprobeBlacklistFileList = dict([(k,"/etc/modprobe.d") for k in glob.glob("/etc/modprobe.d/blacklist*conf")])
 
         self.suspendFileList = {"/etc/suspend.conf": "/etc/",
                                 "/usr/sbin/resume": "/bin/"
@@ -145,6 +147,7 @@ class BaseSystem:
 
         mkdir(self.getNewRoot("/lib/modules/%s" % self.kver))
         mkdir(self.getNewRoot("/lib/firmware"))
+        mkdir(self.getNewRoot("/etc/modprobe.d"))
 
     def copyBasefiles(self):
         for i in self.baseFileList:
@@ -192,6 +195,10 @@ class BaseSystem:
             for i in self.suspendFileList:
                 copy(i, self.getNewRoot(self.baseFileList[i]))
 
+    def addModprobeBlacklists(self):
+        for i in self.modprobeBlacklistFileList:
+            copy(i, self.getNewRoot(self.modprobeBlacklistFileList[i]))
+
     def create(self):
         self.createBaseDirectories()
         self.copyBasefiles()
@@ -200,6 +207,7 @@ class BaseSystem:
         self.createConfig()
         self.addRaid()
         self.addSuspend()
+        self.addModprobeBlacklists()
 
 class KernelModule:
     def __init__(self):
