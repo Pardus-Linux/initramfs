@@ -189,13 +189,14 @@ manage_tmpfs() {
         mkdir -p "/newroot/${d}"
     done
 
-    mv /dev/* /newroot/dev/
+    # Those seemed redundant to me when using devtmpfs
+    #mv /dev/* /newroot/dev/
 
     # coolplug may continue making nodes
-    mount -o bind /newroot/dev /dev
+    #mount -o bind /newroot/dev /dev
 
     # just to make sure, may not be necessary
-    [ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
+    #[ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
 }
 
 mount_nfs() {
@@ -253,7 +254,10 @@ mount_cdroot() {
         fall2sh "Could not mount root image"
     fi
     FS_LOCATION="mnt/livecd"
-    umount /dev
+
+
+    # FIXME: Commenting this should fix the issue reported in 64bit list.
+    # umount /dev
 
     for x in ${ROOT_LINKS}
     do
