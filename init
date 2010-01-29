@@ -162,7 +162,7 @@ find_live_mount() {
                 # Check for cdroot image
                 if [ -e /newroot/mnt/cdrom/${LOOPBACKFILE} ]
                 then
-                    ROOT_DEVICE="${x}"
+                    ROOT_DEVICE="/newroot${x}"
                     if [ "$COPYTORAM" == "1" ]
                     then
                         info "Copying Live Media files to RAM"
@@ -460,7 +460,7 @@ then
     for i in `seq 50`
     do
         t=`findfs ${LIVEROOT} 2>/dev/null`
-        find_live_mount "/newroot$t"
+        find_live_mount "$t"
 
         if [ "${ROOT_DEVICE}" != "" ]
         then
