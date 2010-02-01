@@ -184,22 +184,15 @@ find_live_mount() {
 manage_tmpfs() {
     mount -t tmpfs tmpfs /newroot
 
-    for d in ${TMPFS_DIRS}
-    do
+    for d in ${TMPFS_DIRS}; do
         mkdir -p "/newroot/${d}"
     done
-
-    # Those seemed redundant to me when using devtmpfs
-    #mv /dev/* /newroot/dev/
-
-    # coolplug may continue making nodes
-    #mount -o bind /newroot/dev /dev
-
-    # just to make sure, may not be necessary
-    #[ ! -e /newroot/dev/console ] && mknod /newroot/dev/console c 5 1
 }
 
 mount_nfs() {
+    FS_LOCATION='mnt/thin'
+
+    # Change directory to /newroot
     cd /newroot
 
     # FIXME: busybox mount does not load automatically
@@ -226,12 +219,13 @@ mount_nfs() {
         fall2sh "Could not nfs root"
     fi
 
-    FS_LOCATION='mnt/thin'
-
-    for x in ${ROOT_LINKS}
-    do
+    # Create necessary links
+    for x in ${ROOT_LINKS}; do
         ln -s "${FS_LOCATION}/${x}" "${x}"
     done
+
+    # We need this for x86_64
+    ln -s "${FS_LOCATION}/lib" "lib64"
 
     chmod 1777 tmp
     (cd /newroot/${FS_LOCATION}; cp -a ${ROOT_TREES} /newroot)
@@ -241,11 +235,14 @@ mount_nfs() {
 }
 
 mount_cdroot() {
+    FS_LOCATION="mnt/livecd"
+
+    # Change directory to /newroot
+    cd /newroot
 
     # These are not loaded automatically
     modprobe -q squashfs
 
-    cd /newroot
     # Loop type squashfs
     mount -t squashfs -o loop,ro /newroot/mnt/cdrom/${LOOPBACKFILE} /newroot/mnt/livecd
 
@@ -253,16 +250,14 @@ mount_cdroot() {
     then
         fall2sh "Could not mount root image"
     fi
-    FS_LOCATION="mnt/livecd"
 
-
-    # FIXME: Commenting this should fix the issue reported in 64bit list.
-    # umount /dev
-
-    for x in ${ROOT_LINKS}
-    do
+    # Create necessary links
+    for x in ${ROOT_LINKS}; do
         ln -s "${FS_LOCATION}/${x}" "${x}"
     done
+
+    # We need this for x86_64
+    ln -s "${FS_LOCATION}/lib" "lib64"
 
     chmod 1777 tmp
     (cd /newroot/${FS_LOCATION}; cp -a ${ROOT_TREES} /newroot)
