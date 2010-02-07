@@ -146,7 +146,7 @@ probe_virtio() {
 
 mount_rootfs() {
     FS_TYPE=`disktype $ROOT_DEVICE | grep KERNELMODULE | awk '{print $2}'`
-    info "Mounting rootfs: $ROOT_DEVICE"
+    info "Mounting rootfs: $ROOT_DEVICE ($FS_TYPE)"
     mount -r -t $FS_TYPE -n ${ROOT_FLAGS} ${ROOT_DEVICE} /newroot
 }
 
