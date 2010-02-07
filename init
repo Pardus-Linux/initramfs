@@ -80,7 +80,7 @@ probe_devices() {
 
     if [ x"$HAS_MASS_STORAGE" == "x1" ]; then
         # FIXME: Should we wait here?
-        info "Found USB storage devices."
+        info "Found USB storage devices"
     fi
 
     # Unset hotplug helper
