@@ -1,3 +1,7 @@
+2010-07-02 Onur Küçük <onur [at] pardus.org.tr>
+		* Fix variables for config and cmdline parsers
+		* Probe filesystem type for live system, remove static fs module loading
+
 2010-01-15 Fatih Aşıcı <fatih [at] pardus.org.tr>
 		* Write info messages into the kernel ring buffer
 		* Print the startup message earlier
