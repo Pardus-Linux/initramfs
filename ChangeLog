@@ -1,3 +1,7 @@
+2010-09-14 Fatih Aşıcı <fatih [at] pardus.org.tr>
+		* Allow blacklisting modules with blacklist= option in kernel
+		command line
+
 2010-07-02 Onur Küçük <onur [at] pardus.org.tr>
 		* Fix variables for config and cmdline parsers
 		* Probe filesystem type for live system, remove static fs module loading
