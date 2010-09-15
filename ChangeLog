@@ -1,3 +1,8 @@
+
+2010-09-15 Onur Küçük <onur [at] pardus.org.tr>
+		* Use /bin for busybox binary and lists file, as it is a seperate
+		package now
+
 2010-09-14 Fatih Aşıcı <fatih [at] pardus.org.tr>
 		* Allow blacklisting modules with blacklist= option in kernel
 		command line
