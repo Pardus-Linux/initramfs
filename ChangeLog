@@ -1,4 +1,8 @@
 
+2010-09-20 Onur Küçük <onur [at] pardus.org.tr>
+		* Use function parameter instead of global variables in
+		find_live_mount as it causes confusing warnings
+
 2010-09-15 Onur Küçük <onur [at] pardus.org.tr>
 		* Use /bin for busybox binary and lists file, as it is a seperate
 		package now
