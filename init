@@ -420,7 +420,7 @@ mkdir -m 0755 /dev/pts
 mount -t devpts -o gid=5,mode=620 devpts /dev/pts
 
 # Initialize plymouth daemon if found
-test -x /sbin/plymouthd && /sbin/plymouthd --attach-to-session
+test -x /sbin/plymouthd && /sbin/plymouthd
 
 # First parse config file, then cmdline to allow overwriting internal config
 if [ -f "$INITRAMFSCONF" ]
