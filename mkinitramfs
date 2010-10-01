@@ -59,10 +59,16 @@ def mknod(nodfile, nodtype, major, minor, perms=0666):
     os.mknod(nodfile, perms | devtype, os.makedev(major, minor))
 
 def copy(source, destination):
+    # First let's check for the target directory and create if
+    # it doesn't exist
+    destdir = os.path.dirname(destination)
+    if not os.path.isdir(destdir):
+        mkdir(destdir)
+
     try:
         shutil.copy2(source, destination)
     except IOError:
-        printWarn("Could not find file %s" % source)
+        printWarn("Could not find %s" % source)
 
 def touch(_file):
     if os.path.exists(_file):
@@ -84,12 +90,13 @@ def run(*cmd):
     return subprocess.call(cmd, shell=True, stdout=f, stderr=f)
 
 def printFail(msg):
-    print msg
+    print "ERROR: %s" % msg
+
     tempdir.cleanup()
     sys.exit(1)
 
 def printWarn(msg):
-    print msg
+    print "WARNING: %s" % msg
 
 def setKernelVersion(Version=""):
     if Version == "":
@@ -429,9 +436,10 @@ class KernelModule:
         self.appendFirmwares()
         self.depmod()
 
-class Splash:
+class Bootsplash:
     def __init__(self):
         self.themeDir = "/etc/bootsplash/themes"
+        self.splashUtil = "/sbin/splash"
         self.defaultTheme = "Pardus"
         self.defaultResolutions = ["1024x768"]
         self.targetDir = config["tmpDir"]
@@ -441,42 +449,35 @@ class Splash:
         self.availableResolutions = []
         self.availableThemes = []
 
-    def findThemes(self):
-        self.availableThemes = os.listdir(self.themeDir)
+    def install(self):
+        if os.path.exists(self.themeDir) and os.path.exists(self.splashUtil):
+            for f in os.listdir("%s/%s/config" % (self.themeDir, self.theme)):
+                self.availableResolutions.append(f.replace("bootsplash-", "").replace(".cfg", ""))
 
-    def findResolutions(self):
-        res = []
-        for i in os.listdir("%s/%s/config" % (self.themeDir, self.theme)):
-            res.append(i.replace("bootsplash-", "").replace(".cfg", ""))
+            self.resolutions = self.availableResolutions
 
-        self.availableResolutions = res
-
-    def make(self):
-        # /sbin/splash -s -f /etc/bootsplash/themes/$FBSPLASH_THEME/config/bootsplash-$FBSPLASH_RES.cfg > $MOUNT_IMAGE/bootsplash
-        cmd = "/sbin/splash -s -f %s/%s/config/bootsplash-%s.cfg >> %s/bootsplash"
-        for i in self.resolutions:
-            capture(cmd % (self.themeDir, self.theme, i, self.targetDir))
-            # print cmd % (self.themeDir, self.theme, i, self.targetDir)
-
-    def makeDefaults(self):
-        self.findResolutions()
-        self.resolutions = self.availableResolutions
-        self.make()
+            # /sbin/splash -s -f
+            # /etc/bootsplash/themes/$FBSPLASH_THEME/config/bootsplash-$FBSPLASH_RES.cfg > $MOUNT_IMAGE/bootsplash
+            cmd = "%s -s -f %s/%s/config/bootsplash-%s.cfg >> %s/bootsplash"
+            for resolution in self.resolutions:
+                capture(cmd % (self.splashUtil,
+                               self.themeDir,
+                               self.theme,
+                               resolution,
+                               self.targetDir))
 
 class Plymouth:
     def __init__(self):
         self.fileList = "/usr/share/plymouth/initramfs.files"
         self.targetDir = config["tmpDir"]
 
-    def install():
+    def install(self):
         """Will install plymouth related stuff."""
         if os.path.exists(self.fileList):
             with open(self.fileList, "r") as files:
                 for _file in files:
-                    target = os.path.join(self.targetDir, os.path.dirname(_file.strip())[1:])
-                    if not os.path.isdir(target):
-                        mkdir(target)
-                    copy(_file, target)
+                    filename = _file.strip()
+                    copy(filename.strip(), os.path.join(self.targetDir, filename[1:]))
 
 class Initramfs:
     def __init__(self):
@@ -586,7 +587,7 @@ if __name__ == "__main__":
 
     # Check for bootsplash and install if found
     bootsplash = Bootsplash()
-    bootsplash.makeDefaults()
+    bootsplash.install()
 
     # Check for plymouth and install if found
     plymouth = Plymouth()
