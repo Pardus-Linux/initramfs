@@ -121,19 +121,21 @@ class BaseSystem:
                             "kmsg"      : ["c", 1, 11],
                            }
 
-        self.baseFileList = {"/bin/busybox"                 : "/bin/",
-                             "/bin/busybox.links"           : "/bin/",
-                             "/lib/initramfs/hotplug"       : "/sbin/",
-                             "/usr/bin/disktype"            : "/bin/",
-                             "/lib/initramfs/init"          : "/",
-                             "/lib/initramfs/udhcpc.script" : "/etc/",
-                             "/lib/initramfs/profile.rc"    : "/etc/profile",
+        self.baseFileList = {
+                                 "/bin/busybox"                 : "/bin/",
+                                 "/bin/busybox.links"           : "/bin/",
+                                 "/usr/bin/disktype"            : "/bin/",
+                                 "/lib/initramfs/init"          : "/",
+                                 "/lib/initramfs/hotplug"       : "/sbin/",
+                                 "/lib/initramfs/udhcpc.script" : "/etc/",
+                                 "/lib/initramfs/profile.rc"    : "/etc/profile",
                             }
 
         self.modprobeBlacklistFileList = dict([(k,"/etc/modprobe.d") for k in glob.glob("/etc/modprobe.d/blacklist*conf")])
 
-        self.suspendFileList = {"/etc/suspend.conf": "/etc/",
-                                "/usr/sbin/resume": "/bin/"
+        self.suspendFileList = {
+                                    "/etc/suspend.conf"         : "/etc/",
+                                    "/usr/sbin/resume"          : "/bin/",
                                }
 
 
@@ -236,11 +238,11 @@ class KernelModule:
         self.scsiDirs = ["kernel/drivers/scsi"]
         self.scsiModules = ["mptfc", "mptsas", "mptscsih", "mptspi", "zfcp"]
 
+        self.mdDirs = ["kernel/drivers/md"]
         self.ataDirs = ["kernel/drivers/ata"]
         self.mmcDirs = ["kernel/drivers/mmc"]
-        self.blockDirs = ["kernel/drivers/block"]
         self.ideDirs = ["kernel/drivers/ide"]
-        self.mdDirs = ["kernel/drivers/md"]
+        self.blockDirs = ["kernel/drivers/block"]
 
         self.firewireModules = ["sd_mod", "ieee1394", "ohci1394", "sbp2", "firewire-ohci", "firewire-sbp2"]
         self.i2oModules = ["i2o_block"]
@@ -461,6 +463,21 @@ class Splash:
         self.resolutions = self.availableResolutions
         self.make()
 
+class Plymouth:
+    def __init__(self):
+        self.fileList = "/usr/share/plymouth/initramfs.files"
+        self.targetDir = config["tmpDir"]
+
+    def install():
+        """Will install plymouth related stuff."""
+        if os.path.exists(self.fileList):
+            with open(self.fileList, "r") as files:
+                for _file in files:
+                    target = os.path.join(self.targetDir, os.path.dirname(_file.strip())[1:])
+                    if not os.path.isdir(target):
+                        mkdir(target)
+                    copy(_file, target)
+
 class Initramfs:
     def __init__(self):
         self.destDir = config["destDir"]
@@ -497,34 +514,48 @@ if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-k", "--kernel", dest="kernelVersion", type="string",
             help="kernel version to create initramfs for")
+
     parser.add_option("-t", "--type", dest="type", type="string", default="kernel",
             help="kernel type to create initramfs for")
+
     parser.add_option("-o", "--output", dest="destDir", type="string", metavar="DIR", default="/boot",
             help="create initramfs in DIR")
+
     parser.add_option("-c", "--configfile", dest="configFile", type="string", metavar="FILE", default="/etc/initramfs.conf",
             help="use FILE for initramfs config file, default is /etc/initramfs.conf")
+
     parser.add_option("-r", "--rootdir", dest="rootDir", type="string", metavar="DIR", default="/",
             help="use DIR as basedir for kernel modules")
+
     parser.add_option("-f", "--filename", dest="filename", type="string", metavar="FILE",
             help="use FILE for initramfs file name")
+
     parser.add_option("-d", "--debug", action="store_true", dest="debug", default=False,
             help="print extra debug info")
+
     parser.add_option("--blacklist", dest="blackList", type="string", metavar="FILES", default="",
             help="define modules to be blacklisted, seperated by comma. Example: e100,rtl819,ahci")
+
     parser.add_option("--network", action="store_true", dest="networkModule", default=False,
             help="add network modules")
+
     parser.add_option("--nodrm", action="store_true", dest="excludeDRM", default=False,
             help="Don't include KMS capable DRM modules")
+
     parser.add_option("--network-generic", action="store_true", dest="networkModuleBasic", default=False,
             help="add only generic network modules")
+
     parser.add_option("--keeptmp", action="store_true", dest="keepTmp", default=False,
-            help="wheter to keep temporary dir after operation")
-    #parser.add_option("-n", "--dry-run", action="store_true", dest="dryrun", default=False,
-    #        help="do not perform any action, just show what will be done")
-    #parser.add_option("--list-modules", action="store_true", dest="listModules", default=False,
-    #        help="do not perform any action, just show what will be done")
-    #parser.add_option("--list-base", action="store_true", dest="listBase", default=False,
-    #        help="do not perform any action, just show what will be done")
+            help="whether to keep temporary dir after operation")
+
+    parser.add_option("-n", "--dry-run", action="store_true", dest="dryrun", default=False,
+            help="do not perform any action, just show what will be done")
+
+    parser.add_option("--list-modules", action="store_true", dest="listModules", default=False,
+            help="do not perform any action, just show what will be done")
+
+    parser.add_option("--list-base", action="store_true", dest="listBase", default=False,
+            help="do not perform any action, just show what will be done")
 
     (opts, args) = parser.parse_args()
 
@@ -534,7 +565,7 @@ if __name__ == "__main__":
     config["rootDir"] = os.path.abspath(opts.rootDir)
 
     config["debug"] = opts.debug
-    #config["dryrun"] = opts.dryrun
+    config["dryrun"] = opts.dryrun
     tempdir.keepTmp = opts.keepTmp
 
     config["kernelType"] = opts.type
@@ -553,8 +584,13 @@ if __name__ == "__main__":
     basesystem = BaseSystem()
     basesystem.create()
 
-    splash = Splash()
-    splash.makeDefaults()
+    # Check for bootsplash and install if found
+    bootsplash = Bootsplash()
+    bootsplash.makeDefaults()
+
+    # Check for plymouth and install if found
+    plymouth = Plymouth()
+    plymouth.install()
 
     kernelmodule = KernelModule()
     kernelmodule.autoGenerate()
