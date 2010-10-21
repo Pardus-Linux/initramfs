@@ -1,4 +1,8 @@
 
+2010-10-21 Onur Küçük <onur [at] pardus.org.tr>
+		* Revert rootdir change, we will do it in a better way
+		* Fix depmod paramaeter
+
 2010-10-20 Onur Küçük <onur [at] pardus.org.tr>
 		* Make sure some base files (lvm etc.) are used from rootdir, if
 		defined
