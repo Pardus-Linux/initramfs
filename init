@@ -42,6 +42,10 @@ info() {
 }
 
 fall2sh() {
+    # Kill any possible plymouth instances
+    test -x /bin/plymouth && /bin/plymouth --quit &> /dev/null
+    kill -9 $(pidof plymouthd)
+
     echo "--> $*"
 
     # Use a login shell for sourcing /etc/profile
@@ -529,7 +533,6 @@ fi
 
 [ "${INIT}" == "" ] && INIT="/sbin/init";
 
-# FIXME: Test these on livemedia bootings
 # Move mounts instead of umount/mount
 mount --move /dev /newroot/dev
 mount --move /proc /newroot/proc
