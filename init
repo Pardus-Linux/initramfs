@@ -99,6 +99,10 @@ probe_kms() {
         info "Loading KMS driver"
         grep -q 1 $device && modprobe -bq `cat ${device%boot_vga}modalias`
     done
+    if [ ! -c /dev/fb0 ]; then
+        echo "options uvesafb scroll=ywrap mtrr=0 nocrtc=1 mode_option=1024x768-32" > /etc/modprobe.d/uvesafb.conf
+        modprobe -bq uvesafb
+    fi
 }
 
 probe_pci_devices() {

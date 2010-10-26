@@ -1,3 +1,5 @@
+2010-10-26 Fatih Aşıcı <fatih [at] pardus.org.tr>
+		* Load uvesafb module when KMS is not supported.
 
 2010-10-21 Onur Küçük <onur [at] pardus.org.tr>
 		* Revert rootdir change, we will do it in a better way
