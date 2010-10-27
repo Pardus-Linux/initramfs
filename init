@@ -31,8 +31,6 @@ ROOT_DEVICE=""
 ROOT_TARGET=""
 RESUME_DEVICE=""
 
-HAS_MASS_STORAGE=0
-
 ###########################
 # Miscellaneous functions #
 ###########################
@@ -43,8 +41,8 @@ info() {
 
 fall2sh() {
     # Kill any possible plymouth instances
-    test -x /bin/plymouth && /bin/plymouth --quit &> /dev/null
-    kill -9 $(pidof plymouthd)
+    test -x /bin/plymouth && /bin/plymouth quit &> /dev/null
+    kill -9 $(pidof plymouthd) &> /dev/null
 
     echo "--> $*"
 
@@ -77,17 +75,13 @@ probe_devices() {
     # Set hotplug helper for firmware loading
     echo $HOTPLUG > /proc/sys/kernel/hotplug
 
-    [ "x$1" = "x--with-kms" ] && probe_kms
-
-    test -x /bin/plymouth && /bin/plymouth --show-splash
+    if [ "x$1" = "x--with-kms" ]; then
+        probe_kms
+        test -x /bin/plymouth && /bin/plymouth show-splash
+    fi
 
     probe_pci_devices
     probe_usb_devices
-
-    if [ x"$HAS_MASS_STORAGE" == "x1" ]; then
-        # FIXME: Should we wait here?
-        info "Found USB storage devices"
-    fi
 
     # Unset hotplug helper
     echo > /proc/sys/kernel/hotplug
@@ -121,7 +115,6 @@ probe_usb_devices() {
     for module in /sys/bus/usb/devices/*/modalias; do
         [ -f $module ] || continue
         MODULES="$MODULES $(cat $module)"
-        grep -qw 08 ${module%modalias}bInterfaceClass && HAS_MASS_STORAGE=1
     done
     modprobe -bqa $MODULES
 }
@@ -544,5 +537,5 @@ mount --move /sys /newroot/sys
 
 # And we start
 info "Switching to the real root"
-test -x /bin/plymouth && /bin/plymouth --newroot=/newroot
+test -x /bin/plymouth && /bin/plymouth update-root-fs --new-root-dir=/newroot
 exec /bin/switch_root -c /dev/console /newroot ${INIT} ${LEVEL}
