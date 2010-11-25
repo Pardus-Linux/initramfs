@@ -1,3 +1,6 @@
+2010-11-25 Ozan Çağlayan <ozan [at] pardus.org.tr>
+		* Fix plymouth file list path.
+
 2010-10-26 Fatih Aşıcı <fatih [at] pardus.org.tr>
 		* Load uvesafb module when KMS is not supported.
 
