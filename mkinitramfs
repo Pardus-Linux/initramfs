@@ -441,36 +441,6 @@ class KernelModule:
         self.appendFirmwares()
         self.depmod()
 
-class Bootsplash:
-    def __init__(self):
-        self.themeDir = "/etc/bootsplash/themes"
-        self.splashUtil = "/sbin/splash"
-        self.defaultTheme = "Pardus"
-        self.defaultResolutions = ["1024x768"]
-        self.targetDir = config["tmpDir"]
-
-        self.theme = self.defaultTheme
-        self.resolutions = self.defaultResolutions
-        self.availableResolutions = []
-        self.availableThemes = []
-
-    def install(self):
-        if os.path.exists(self.themeDir) and os.path.exists(self.splashUtil):
-            for f in os.listdir("%s/%s/config" % (self.themeDir, self.theme)):
-                self.availableResolutions.append(f.replace("bootsplash-", "").replace(".cfg", ""))
-
-            self.resolutions = self.availableResolutions
-
-            # /sbin/splash -s -f
-            # /etc/bootsplash/themes/$FBSPLASH_THEME/config/bootsplash-$FBSPLASH_RES.cfg > $MOUNT_IMAGE/bootsplash
-            cmd = "%s -s -f %s/%s/config/bootsplash-%s.cfg >> %s/bootsplash"
-            for resolution in self.resolutions:
-                capture(cmd % (self.splashUtil,
-                               self.themeDir,
-                               self.theme,
-                               resolution,
-                               self.targetDir))
-
 class Plymouth:
     def __init__(self):
         self.fileList = "/lib/initramfs/plymouth.list"
@@ -589,10 +559,6 @@ if __name__ == "__main__":
 
     basesystem = BaseSystem()
     basesystem.create()
-
-    # Check for bootsplash and install if found
-    bootsplash = Bootsplash()
-    bootsplash.install()
 
     # Check for plymouth and install if found
     plymouth = Plymouth()
