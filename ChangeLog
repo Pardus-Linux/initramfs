@@ -1,3 +1,6 @@
+2010-12-10 Ozan Çağlayan <ozan [at] pardus.org.tr>
+		* Include new firewire modules, drop the old ones.
+
 2010-11-25 Ozan Çağlayan <ozan [at] pardus.org.tr>
 		* Fix plymouth file list path.
 

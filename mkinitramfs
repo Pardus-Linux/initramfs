@@ -251,7 +251,7 @@ class KernelModule:
         self.ideDirs = ["kernel/drivers/ide"]
         self.blockDirs = ["kernel/drivers/block"]
 
-        self.firewireModules = ["sd_mod", "ieee1394", "ohci1394", "sbp2", "firewire-ohci", "firewire-sbp2"]
+        self.firewireModules = ["firewire-ohci", "firewire-sbp2", "firewire-net", "firewire-core"]
         self.i2oModules = ["i2o_block"]
         self.usbModules = ["usb-storage", "sd_mod", "usbcore", "ehci-hcd", "ohci-hcd", "uhci-hcd"]
 
