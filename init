@@ -45,6 +45,7 @@ fall2sh() {
     kill -9 $(pidof plymouthd) &> /dev/null
 
     echo "--> $*"
+    echo "Reboot with initramfs=shell(noprobe) to further debug the issue."
 
     # Use a login shell for sourcing /etc/profile
     /bin/sh -l
