@@ -1,3 +1,7 @@
+2010-12-13 Ozan Çağlayan <ozan [at] pardus.org.tr>
+		* Probe RAID by default if initramfs is running on an installation
+		  boot.
+
 2010-12-10 Ozan Çağlayan <ozan [at] pardus.org.tr>
 		* Include new firewire modules, drop the old ones.
 		* Drop bootsplash support as it's not supported by the base system.

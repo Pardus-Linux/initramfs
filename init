@@ -313,7 +313,10 @@ parse_config() {
                 ROOT_FLAGS=$(echo $inputline|cut -f2- -d=)
             ;;
             liveroot=*)
+                # Installation or livecd, enable RAID by default
+                # to be able to read existing RAID installations
                 LIVE=1
+                RAID=1
                 LIVEROOT=$(echo $inputline|cut -f2- -d=)
             ;;
             resume=*)
