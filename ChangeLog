@@ -1,6 +1,8 @@
 2010-12-13 Ozan Çağlayan <ozan [at] pardus.org.tr>
 		* Probe RAID by default if initramfs is running on an installation
 		  boot.
+		* Probe VIRTIO devices dynamically without needing an explicit
+		  mudur=virtio.
 
 2010-12-10 Ozan Çağlayan <ozan [at] pardus.org.tr>
 		* Include new firewire modules, drop the old ones.
