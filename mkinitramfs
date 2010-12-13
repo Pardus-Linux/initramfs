@@ -271,9 +271,9 @@ class KernelModule:
         ml.sort()
         self.modulesList = ml
 
-    def depmod(self):
+    def depmod(self, targetdir):
         cmd = "/sbin/depmod -a -b %s -F %s/System.map %s"
-        capture(cmd % (self.targetDir, self.modulesDir, self.kernelVersion))
+        capture(cmd % (targetdir, self.modulesDir, self.kernelVersion))
 
     def installModules(self):
         for i in self.modulesList:
@@ -325,6 +325,12 @@ class KernelModule:
                 # FIXME: we miss lots of firmware !
                 printWarn("Could not find firmware %s" % src)
                 pass
+
+    def updateModuleDependencies(self, force=False):
+        # this is here to prevent a race condition with pakhandler, when installing a system from scratch
+        if force or not os.path.exists("%s/modules.dep" % self.modulesDir):
+            printWarn("Could not find module dependencies in %s, running depmod for system" % self.modulesDir)
+            self.depmod(self.rootDir)
 
     def addDir(self, mdir):
         newModules = []
@@ -434,12 +440,13 @@ class KernelModule:
         self.addDRM()
 
     def autoGenerate(self):
+        self.updateModuleDependencies()
         self.addGeneric()
         self.findModuleDeps()
         self.tidyModuleList()
         self.installModules()
         self.appendFirmwares()
-        self.depmod()
+        self.depmod(self.targetDir)
 
 class Plymouth:
     def __init__(self):
