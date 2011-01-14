@@ -452,17 +452,14 @@ probe_devices --with-kms
 
 if [ -x /bin/resume && "x$NORESUME" != "x1" ]
 then
-    # FIXME: Write resume device to /sys/power/resume for SATA disks
-    # This should not be needed at all
-    # /bin/stat -c%t:%T $RESUME_DEVICE > /sys/power/resume
-
-    # Resume
-    if [ "x$SPLASH" == "x$1" ] then
+    if [ "x$SPLASH" == "x$1" ]
+    then
         SPLASHPARAM="-P splash=y"
     else
         SPLASHPARAM="-P splash=n"
     fi
     # FIXME: This will fail if resume= contains LABEL/UUID
+    # Resume
     /bin/resume $SPLASHPARAM $RESUME_DEVICE
 fi
 
