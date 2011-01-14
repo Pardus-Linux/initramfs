@@ -206,7 +206,7 @@ class BaseSystem:
 
     def addSuspend(self):
         for i in self.suspendFileList:
-            copy(i, self.getNewRoot(self.baseFileList[i]))
+            copy(i, self.getNewRoot(self.suspendFileList[i]))
 
     def addModprobeBlacklists(self):
         for i in self.modprobeBlacklistFileList:
