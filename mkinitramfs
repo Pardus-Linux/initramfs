@@ -321,7 +321,6 @@ class KernelModule:
                 copy(src, target)
 
             else:
-                # FIXME: we miss lots of firmware !
                 printWarn("Could not find firmware %s" % src)
                 pass
 
