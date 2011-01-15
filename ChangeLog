@@ -2,6 +2,7 @@
 		* Don't check the existence of /etc/suspend.conf upon copying suspend
 		related files.
 		* Rework whole resume mechanism.
+		* Log LVM stuff into kmsg.
 
 2010-12-13 Onur Küçük <onur [at] pardus.org.tr>
 		* Run depmod on system if modules.dep is not found, to prevent race

@@ -40,6 +40,10 @@ info() {
     echo "<6>initramfs: $1" > /dev/kmsg
 }
 
+log_output() {
+    $@ | echo "<6>`sed 's#^\(.*\)$#initramfs:\1#g'`" > /dev/kmsg
+}
+
 fall2sh() {
     # Kill any possible plymouth instances
     test -x /bin/plymouth && /bin/plymouth quit &> /dev/null
@@ -124,8 +128,8 @@ probe_lvm() {
     modprobe -qa dm-mod
     if [ -x /sbin/lvm ]
     then
-        /sbin/lvm vgscan --ignorelockingfailure
-        /sbin/lvm vgchange -ay --ignorelockingfailure
+        log_output /sbin/lvm vgscan --ignorelockingfailure
+        log_output /sbin/lvm vgchange -ay --ignorelockingfailure
     fi
 }
 probe_virtio_devices() {
