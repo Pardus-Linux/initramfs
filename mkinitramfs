@@ -77,10 +77,6 @@ def touch(_file):
         f = open(_file, 'w')
         f.close()
 
-def uniq(alist):
-    _set = {}
-    return [_set.setdefault(e,e) for e in alist if e not in _set]
-
 def capture(*cmd):
     a = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return a.communicate()
@@ -266,7 +262,7 @@ class KernelModule:
 
 
     def tidyModuleList(self):
-        ml = uniq(self.modulesList)
+        ml = list(set(self.modulesList)))
         ml.sort()
         self.modulesList = ml
 
