@@ -53,15 +53,6 @@ Index: mkinitramfs
  
      def addModprobeBlacklists(self):
          for i in self.modprobeBlacklistFileList:
-@@ -262,7 +290,7 @@
- 
- 
-     def tidyModuleList(self):
--        ml = list(set(self.modulesList)))
-+        ml = list(set(self.modulesList))
-         ml.sort()
-         self.modulesList = ml
- 
 @@ -488,6 +526,12 @@
      tempdir.create()
      config["tmpDir"] = tempdir.tmpDir
