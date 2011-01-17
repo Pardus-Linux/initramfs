@@ -262,7 +262,7 @@ class KernelModule:
 
 
     def tidyModuleList(self):
-        ml = list(set(self.modulesList)))
+        ml = list(set(self.modulesList))
         ml.sort()
         self.modulesList = ml
 
