@@ -456,7 +456,7 @@ probe_devices --with-kms
 
 if [ -x /bin/resume -a "x$NORESUME" != "x1" ]
 then
-    if [ "x$SPLASH" == "x$1" ]
+    if [ "x$SPLASH" == "x1" ]
     then
         SPLASHPARAM="-P splash=y"
     else
