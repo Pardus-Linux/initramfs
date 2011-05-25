@@ -395,6 +395,7 @@ parse_cmdline() {
                 LEVEL="s"
                 # Disable splash in single-user mode
                 SPLASH=0
+            ;;
             quiet)
                 QUIET=1
             ;;
