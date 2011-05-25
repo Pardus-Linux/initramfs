@@ -388,13 +388,15 @@ parse_cmdline() {
             copytoram)
                 COPYTORAM=1
             ;;
-            splash)
-                SPLASH=1
-            ;;
             single)
                 LEVEL="s"
-                # Disable splash in single-user mode
-                SPLASH=0
+            ;;
+            splash)
+                SPLASH=1
+                # Disable splash if in single-user mode
+                if [ "x${LEVEL}" == "xs" -o "x${LEVEL}" == "xS" ]; then
+                    SPLASH=0
+                fi
             ;;
             quiet)
                 QUIET=1
