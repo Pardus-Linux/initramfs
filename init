@@ -21,6 +21,7 @@ RAID=0
 LVM=0
 COPYTORAM=0
 SPLASH=0
+WIPEMEM=0
 
 HOTPLUG="/sbin/hotplug"
 
@@ -31,6 +32,7 @@ ROOT_FLAGS=""
 ROOT_DEVICE=""
 ROOT_TARGET=""
 RESUME_DEVICE=""
+WIPEMEM_OPTS="-llv"
 
 ###########################
 # Miscellaneous functions #
@@ -336,6 +338,13 @@ parse_config() {
             copytoram)
                 COPYTORAM=1
             ;;
+            wipemem)
+                WIPEMEM=1
+            ;;
+            wipememopts=*)
+                WIPEMEM=1
+                WIPEMEM_OPTS=$(echo $inputline|cut -f2- -d=)
+            ;;
             splash)
                 SPLASH=1
             ;;
@@ -398,6 +407,13 @@ parse_cmdline() {
             ;;
             copytoram)
                 COPYTORAM=1
+            ;;
+            wipemem)
+                WIPEMEM=1
+            ;;
+            wipememopts=*)
+                WIPEMEM=1
+                WIPEMEM_OPTS=$(echo $x|cut -f2- -d=)
             ;;
             splash)
                 SPLASH=1
@@ -469,6 +485,12 @@ fi
 
 # Probe devices
 probe_devices --with-kms
+
+if [ "${WIPEMEM}" = "1" ]
+then
+    sdmem ${WIPEMEM_OPTS}
+    poweroff
+fi
 
 if [ -x /bin/resume -a -b "$RESUME_DEVICE" -a "x$NORESUME" != "x1" ]
 then

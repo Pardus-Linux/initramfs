@@ -1,5 +1,7 @@
 2011-06-20 Onur Küçük <onur [at] pardus.org.tr>
 		* Make sure /lib32 dir is available if exists
+		* Add support for wiping memory in initramfs with wipememopts and
+		wipemem parameters.
 
 2011-01-24 Ozan Çağlayan <ozan [at] pardus.org.tr>
 		* Check if the resume device really exists and is a block special
