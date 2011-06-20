@@ -235,6 +235,11 @@ mount_nfs() {
         ln -s "${FS_LOCATION}/${x}" "${x}"
     done
 
+    if [ -e "${FS_LOCATION}/lib32" ]
+    then
+        ln -s "${FS_LOCATION}/lib32" "lib32"
+    fi
+
     # We need this for x86_64
     ln -s "${FS_LOCATION}/lib" "lib64"
 
@@ -266,6 +271,11 @@ mount_cdroot() {
     for x in ${ROOT_LINKS}; do
         ln -s "${FS_LOCATION}/${x}" "${x}"
     done
+
+    if [ -e "${FS_LOCATION}/lib32" ]
+    then
+        ln -s "${FS_LOCATION}/lib32" "lib32"
+    fi
 
     # We need this for x86_64
     ln -s "${FS_LOCATION}/lib" "lib64"
