@@ -490,7 +490,7 @@ if [ "${WIPEMEM}" = "1" ]
 then
     info "Wiping out memory, system will be shutdown after completion"
     sdmem ${WIPEMEM_OPTS}
-    poweroff
+    poweroff -f
 fi
 
 if [ -x /bin/resume -a -b "$RESUME_DEVICE" -a "x$NORESUME" != "x1" ]
