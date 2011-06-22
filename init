@@ -483,15 +483,15 @@ then
     fall2sh "Starting up a shell"
 fi
 
-# Probe devices
-probe_devices --with-kms
-
 if [ "${WIPEMEM}" = "1" ]
 then
     info "Wiping out memory, system will be shutdown after completion"
     sdmem ${WIPEMEM_OPTS}
     poweroff -f
 fi
+
+# Probe devices
+probe_devices --with-kms
 
 if [ -x /bin/resume -a -b "$RESUME_DEVICE" -a "x$NORESUME" != "x1" ]
 then
